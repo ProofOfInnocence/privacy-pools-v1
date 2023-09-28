@@ -8,7 +8,7 @@ template MerkleTreeUpdater(levels, subtreeLevels, zeroSubtreeRoot) {
     var remainingLevels = levels - subtreeLevels;
 
     signal input oldRoot;
-    signal input newRoot;
+    signal output newRoot;
     signal input leaves[1 << subtreeLevels];
     signal input pathIndices;
     signal private input pathElements[remainingLevels];
@@ -33,5 +33,5 @@ template MerkleTreeUpdater(levels, subtreeLevels, zeroSubtreeRoot) {
     }
     treeAfter.pathIndices <== pathIndices;
     treeAfter.leaf <== subtree.root;
-    treeAfter.root === newRoot;
+    newRoot <== treeAfter.root;
 }
