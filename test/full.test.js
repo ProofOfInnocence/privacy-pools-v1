@@ -8,11 +8,8 @@ const Utxo = require('../src/utxo')
 const { transaction, registerAndTransact, prepareTransaction, buildMerkleTree } = require('../src/index')
 const { toFixedHex, poseidonHash } = require('../src/utils')
 const { Keypair } = require('../src/keypair')
-const { encodeDataForBridge } = require('./utils')
-const config = require('../config')
-const { generate } = require('../src/0_generateAddresses')
 
-const { utxos, deposit } = require('../src/cli')
+const { getUtxos, deposit, withdraw, balance } = require('../src/cli')
 
 const MERKLE_TREE_HEIGHT = 5
 const l1ChainId = 1
@@ -29,7 +26,7 @@ describe('TornadoPool', function () {
 
   async function fixture() {
     require('../scripts/compileHasher')
-    const [sender, gov, multisig] = await ethers.getSigners()
+    const [sender ] = await ethers.getSigners()
     const verifier2 = await deploy('Verifier2')
     // const verifier16 = await deploy('Verifier16')
     const hasher = await deploy('Hasher')
@@ -197,7 +194,7 @@ describe('TornadoPool', function () {
     const bobBalance = await token.balanceOf(bobEthAddress)
     expect(bobBalance).to.be.equal(bobWithdrawAmount)
 
-    console.log('Bob received funds', await utxos({ ethers, tornadoPool, keypair: bobKeypair }))
+    console.log('Bob received funds', await getUtxos({ ethers, tornadoPool, keypair: bobKeypair }))
   })
   
 
@@ -305,26 +302,40 @@ describe('TornadoPool', function () {
     const filter = tornadoPool.filters.NewCommitment()
     const fromBlock = await ethers.provider.getBlock()
     const events = await tornadoPool.queryFilter(filter, fromBlock.number)
+    aliceReceiveUtxo1 = Utxo.decrypt(
+      aliceKeypair,
+      events[0].args.encryptedOutput,
+      events[0].args.index,
+    )
+    aliceReceiveUtxo2 = Utxo.decrypt(
+      aliceKeypair,
+      events[1].args.encryptedOutput,
+      events[1].args.index,
+    )
+    expect(aliceReceiveUtxo1.amount.add(aliceReceiveUtxo2.amount)).to.be.equal(aliceDepositAmount)
+    const aliceUtxos = await getUtxos({ ethers, tornadoPool, keypair: aliceKeypair })
+    expect(aliceUtxos.length).to.be.equal(1)
+    expect(aliceUtxos[0].amount).to.be.equal(aliceDepositAmount)
+  })
 
-    console.log('events', events)
+  it('should deposit and withdraw with single keypair', async function () {
+    const { tornadoPool } = await loadFixture(fixture)
+    const aliceDepositAmount1 = utils.parseEther('0.03')
+    const aliceDepositAmount2 = utils.parseEther('0.04')
+    const aliceWithdrawAmount = utils.parseEther('0.05')
+    const bobEthAddress = '0xDeaD00000000000000000000000000000000BEEf'
 
-    let aliceReceiveUtxo
-    try {
-      aliceReceiveUtxo = Utxo.decrypt(
-        aliceKeypair.keypair,
-        events[0].args.encryptedOutput,
-        events[0].args.index,
-      )
-    } catch (e) {
-      console.log('e', e)
-      // we try to decrypt another output here because it shuffles outputs before sending to blockchain
-      aliceReceiveUtxo = Utxo.decrypt(
-        aliceKeypair.keypair,
-        events[1].args.encryptedOutput,
-        events[1].args.index,
-      )
-    }
-    expect(aliceReceiveUtxo.amount).to.be.equal(aliceDepositAmount)
+    const aliceKeypair = new Keypair() // contains private and public keys
+
+    await deposit({ ethers, tornadoPool, keypair: aliceKeypair, amount: aliceDepositAmount1 })
+    expect(await balance({ ethers, tornadoPool, keypair: aliceKeypair })).to.be.equal(aliceDepositAmount1)
+    await deposit({ ethers, tornadoPool, keypair: aliceKeypair, amount: aliceDepositAmount2 })
+    expect(await balance({ ethers, tornadoPool, keypair: aliceKeypair })).to.be.equal(aliceDepositAmount1.add(aliceDepositAmount2))
+    await withdraw({ ethers, tornadoPool, keypair: aliceKeypair, amount: aliceWithdrawAmount, recipient: bobEthAddress })
+    expect(await balance({ ethers, tornadoPool, keypair: aliceKeypair })).to.be.equal(aliceDepositAmount1.add(aliceDepositAmount2).sub(aliceWithdrawAmount))
 
   })
+
+
+
 })
