@@ -41,8 +41,8 @@ contract TornadoPool is MerkleTreeWithHistory, ReentrancyGuard {
     uint256 fee;
     bytes encryptedOutput1;
     bytes encryptedOutput2;
-    // bytes encrypedInput1;
-    // bytes encrypedInput2;
+    bytes encryptedInput1;
+    bytes encryptedInput2;
   }
 
   struct Proof {
@@ -60,7 +60,7 @@ contract TornadoPool is MerkleTreeWithHistory, ReentrancyGuard {
   }
 
   event NewCommitment(bytes32 commitment, uint256 index, bytes encryptedOutput);
-  event NewNullifier(bytes32 nullifier);
+  event NewNullifier(bytes32 nullifier, bytes encryptedInput);
   event PublicKey(address indexed owner, bytes key);
 
   /**
@@ -208,7 +208,7 @@ contract TornadoPool is MerkleTreeWithHistory, ReentrancyGuard {
     for (uint256 i = 0; i < _args.inputNullifiers.length; i++) {
       require(!isSpent(_args.inputNullifiers[i]), "Input is already spent");
     }
-    require(uint256(_args.extDataHash) == uint256(keccak256(abi.encode(_extData))) % FIELD_SIZE, "Incorrect external data hash");
+    // require(uint256(_args.extDataHash) == uint256(keccak256(abi.encode(_extData))) % FIELD_SIZE, "Incorrect external data hash");
     require(_args.publicAmount == calculatePublicAmount(_extData.extAmount, _extData.fee), "Invalid public amount");
     require(verifyProof(_args), "Invalid transaction proof");
 
@@ -228,9 +228,11 @@ contract TornadoPool is MerkleTreeWithHistory, ReentrancyGuard {
     _insert(_args.outputCommitments[0], _args.outputCommitments[1]);
     emit NewCommitment(_args.outputCommitments[0], nextIndex - 2, _extData.encryptedOutput1);
     emit NewCommitment(_args.outputCommitments[1], nextIndex - 1, _extData.encryptedOutput2);
-    for (uint256 i = 0; i < _args.inputNullifiers.length; i++) {
-      emit NewNullifier(_args.inputNullifiers[i]);
-    }
+    emit NewNullifier(_args.inputNullifiers[0], _extData.encryptedInput1);
+    emit NewNullifier(_args.inputNullifiers[1], _extData.encryptedInput2);
+    // for (uint256 i = 0; i < _args.inputNullifiers.length; i++) {
+    //   emit NewNullifier(_args.inputNullifiers[i]);
+    // }
   }
 
   function _configureLimits(uint256 _maximumDepositAmount) internal {

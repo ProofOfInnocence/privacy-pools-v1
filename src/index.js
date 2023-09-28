@@ -52,14 +52,12 @@ async function getProof({
     fee: toFixedHex(fee),
     encryptedOutput1: outputs[0].encrypt(),
     encryptedOutput2: outputs[1].encrypt(),
-    // encryptedInput1: inputs[0].encrypt(),
-    // encryptedInput2: inputs[1].encrypt(),
+    encryptedInput1: inputs[0].encrypt(),
+    encryptedInput2: inputs[1].encrypt(),
   }
 
-  console.log('extData', extData)
 
   const extDataHash = getExtDataHash(extData)
-  console.log('extDataHash', extDataHash.toString())
   let input = {
     root: tree.root(),
     inputNullifier: inputs.map((x) => x.getNullifier()),
@@ -153,9 +151,6 @@ async function registerAndTransact({ tornadoPool, account, ...rest }) {
     tornadoPool,
     ...rest,
   })
-
-  console.log('args', args)
-  console.log('extData', extData)
 
   const receipt = await tornadoPool.registerAndTransact(account, args, extData, {
     gasLimit: 4e6,
