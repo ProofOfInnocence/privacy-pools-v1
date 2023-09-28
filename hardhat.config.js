@@ -48,20 +48,19 @@ const config = {
           },
         },
       },
+      {
+        version: '0.8.0',
+        settings: {
+          optimizer: {
+            enabled: true,
+            runs: 200,
+          },
+        },
+      },
     ],
   },
   networks: {
-    hardhat: {
-      forking: {
-        url: `https://eth-mainnet.alchemyapi.io/v2/${process.env.ALCHEMY_KEY}`,
-        blockNumber: 13685625,
-      },
-      chainId: 1,
-      initialBaseFeePerGas: 5,
-      loggingEnabled: false,
-      allowUnlimitedContractSize: false,
-      blockGasLimit: 50000000,
-    },
+
     rinkeby: {
       url: `https://rinkeby.infura.io/v3/${process.env.INFURA_API_KEY}`,
       accounts: process.env.PRIVATE_KEY

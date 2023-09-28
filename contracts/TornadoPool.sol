@@ -10,29 +10,25 @@
  * ooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo
  */
 
-pragma solidity ^0.7.0;
+pragma solidity ^0.8.0;
 pragma experimental ABIEncoderV2;
 
-import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
-import { IERC20Receiver, IERC6777, IOmniBridge } from "./interfaces/IBridge.sol";
-import { CrossChainGuard } from "./bridge/CrossChainGuard.sol";
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { IVerifier } from "./interfaces/IVerifier.sol";
 import "./MerkleTreeWithHistory.sol";
 
 /** @dev This contract(pool) allows deposit of an arbitrary amount to it, shielded transfer to another registered user inside the pool
  * and withdrawal from the pool. Project utilizes UTXO model to handle users' funds.
  */
-contract TornadoPool is MerkleTreeWithHistory, IERC20Receiver, ReentrancyGuard, CrossChainGuard {
+contract TornadoPool is MerkleTreeWithHistory, ReentrancyGuard {
   int256 public constant MAX_EXT_AMOUNT = 2**248;
   uint256 public constant MAX_FEE = 2**248;
   uint256 public constant MIN_EXT_AMOUNT_LIMIT = 0.5 ether;
 
   IVerifier public immutable verifier2;
   IVerifier public immutable verifier16;
-  IERC6777 public immutable token;
-  address public immutable omniBridge;
-  address public immutable l1Unwrapper;
-  address public immutable multisig;
+  IERC20 public immutable token;
 
   uint256 public lastBalance;
   uint256 public __gap; // storage padding to prevent storage collision
@@ -68,11 +64,6 @@ contract TornadoPool is MerkleTreeWithHistory, IERC20Receiver, ReentrancyGuard, 
   event NewNullifier(bytes32 nullifier);
   event PublicKey(address indexed owner, bytes key);
 
-  modifier onlyMultisig() {
-    require(msg.sender == multisig, "only governance");
-    _;
-  }
-
   /**
     @dev The constructor
     @param _verifier2 the address of SNARK verifier for 2 inputs
@@ -80,39 +71,27 @@ contract TornadoPool is MerkleTreeWithHistory, IERC20Receiver, ReentrancyGuard, 
     @param _levels hight of the commitments merkle tree
     @param _hasher hasher address for the merkle tree
     @param _token token address for the pool
-    @param _omniBridge omniBridge address for specified token
-    @param _l1Unwrapper address of the L1Helper
-    @param _governance owner address
-    @param _l1ChainId chain id of L1
-    @param _multisig multisig on L2
   */
   constructor(
     IVerifier _verifier2,
     IVerifier _verifier16,
     uint32 _levels,
     address _hasher,
-    IERC6777 _token,
-    address _omniBridge,
-    address _l1Unwrapper,
-    address _governance,
-    uint256 _l1ChainId,
-    address _multisig
+    IERC20 _token,
+    uint256 _maximumDepositAmount
   )
     MerkleTreeWithHistory(_levels, _hasher)
-    CrossChainGuard(address(IOmniBridge(_omniBridge).bridgeContract()), _l1ChainId, _governance)
   {
     verifier2 = _verifier2;
     verifier16 = _verifier16;
     token = _token;
-    omniBridge = _omniBridge;
-    l1Unwrapper = _l1Unwrapper;
-    multisig = _multisig;
+    maximumDepositAmount = _maximumDepositAmount;
   }
 
-  function initialize(uint256 _maximumDepositAmount) external initializer {
-    _configureLimits(_maximumDepositAmount);
-    super._initialize();
-  }
+  // function initialize(uint256 _maximumDepositAmount) external initializer {
+  //   _configureLimits(_maximumDepositAmount);
+  //   super._initialize();
+  // }
 
   /** @dev Main function that allows deposits, transfers and withdrawal.
    */
@@ -140,22 +119,22 @@ contract TornadoPool is MerkleTreeWithHistory, IERC20Receiver, ReentrancyGuard, 
     transact(_proofArgs, _extData);
   }
 
-  function onTokenBridged(
-    IERC6777 _token,
-    uint256 _amount,
-    bytes calldata _data
-  ) external override {
-    (Proof memory _args, ExtData memory _extData) = abi.decode(_data, (Proof, ExtData));
-    require(_token == token, "provided token is not supported");
-    require(msg.sender == omniBridge, "only omni bridge");
-    require(_amount >= uint256(_extData.extAmount), "amount from bridge is incorrect");
-    require(token.balanceOf(address(this)) >= uint256(_extData.extAmount) + lastBalance, "bridge did not send enough tokens");
-    require(uint256(_extData.extAmount) <= maximumDepositAmount, "amount is larger than maximumDepositAmount");
-    uint256 sentAmount = token.balanceOf(address(this)) - lastBalance;
-    try TornadoPool(address(this)).onTransact(_args, _extData) {} catch (bytes memory) {
-      token.transfer(multisig, sentAmount);
-    }
-  }
+  // function onTokenBridged(
+  //   IERC20 _token,
+  //   uint256 _amount,
+  //   bytes calldata _data
+  // ) external override {
+  //   (Proof memory _args, ExtData memory _extData) = abi.decode(_data, (Proof, ExtData));
+  //   require(_token == token, "provided token is not supported");
+  //   require(msg.sender == omniBridge, "only omni bridge");
+  //   require(_amount >= uint256(_extData.extAmount), "amount from bridge is incorrect");
+  //   require(token.balanceOf(address(this)) >= uint256(_extData.extAmount) + lastBalance, "bridge did not send enough tokens");
+  //   require(uint256(_extData.extAmount) <= maximumDepositAmount, "amount is larger than maximumDepositAmount");
+  //   uint256 sentAmount = token.balanceOf(address(this)) - lastBalance;
+  //   try TornadoPool(address(this)).onTransact(_args, _extData) {} catch (bytes memory) {
+  //     token.transfer(multisig, sentAmount);
+  //   }
+  // }
 
   /**
    * @dev Wrapper for the internal func _transact to call it using try-catch from onTokenBridged
@@ -165,32 +144,32 @@ contract TornadoPool is MerkleTreeWithHistory, IERC20Receiver, ReentrancyGuard, 
     _transact(_args, _extData);
   }
 
-  /// @dev Method to claim junk and accidentally sent tokens
-  function rescueTokens(
-    IERC6777 _token,
-    address payable _to,
-    uint256 _balance
-  ) external onlyMultisig {
-    require(_to != address(0), "TORN: can not send to zero address");
-    require(_token != token, "can not rescue pool asset");
+  // /// @dev Method to claim junk and accidentally sent tokens
+  // function rescueTokens(
+  //   IERC20 _token,
+  //   address payable _to,
+  //   uint256 _balance
+  // ) external onlyMultisig {
+  //   require(_to != address(0), "TORN: can not send to zero address");
+  //   require(_token != token, "can not rescue pool asset");
 
-    if (_token == IERC6777(0)) {
-      // for Ether
-      uint256 totalBalance = address(this).balance;
-      uint256 balance = _balance == 0 ? totalBalance : _balance;
-      _to.transfer(balance);
-    } else {
-      // any other erc20
-      uint256 totalBalance = _token.balanceOf(address(this));
-      uint256 balance = _balance == 0 ? totalBalance : _balance;
-      require(balance > 0, "TORN: trying to send 0 balance");
-      _token.transfer(_to, balance);
-    }
-  }
+  //   if (_token == IERC20(0)) {
+  //     // for Ether
+  //     uint256 totalBalance = address(this).balance;
+  //     uint256 balance = _balance == 0 ? totalBalance : _balance;
+  //     _to.transfer(balance);
+  //   } else {
+  //     // any other erc20
+  //     uint256 totalBalance = _token.balanceOf(address(this));
+  //     uint256 balance = _balance == 0 ? totalBalance : _balance;
+  //     require(balance > 0, "TORN: trying to send 0 balance");
+  //     _token.transfer(_to, balance);
+  //   }
+  // }
 
-  function configureLimits(uint256 _maximumDepositAmount) public onlyMultisig {
-    _configureLimits(_maximumDepositAmount);
-  }
+  // function configureLimits(uint256 _maximumDepositAmount) public onlyMultisig {
+  //   _configureLimits(_maximumDepositAmount);
+  // }
 
   function calculatePublicAmount(int256 _extAmount, uint256 _fee) public pure returns (uint256) {
     require(_fee < MAX_FEE, "Invalid fee");
@@ -271,15 +250,7 @@ contract TornadoPool is MerkleTreeWithHistory, IERC20Receiver, ReentrancyGuard, 
 
     if (_extData.extAmount < 0) {
       require(_extData.recipient != address(0), "Can't withdraw to zero address");
-      if (_extData.isL1Withdrawal) {
-        token.transferAndCall(
-          omniBridge,
-          uint256(-_extData.extAmount),
-          abi.encodePacked(l1Unwrapper, abi.encode(_extData.recipient, _extData.l1Fee))
-        );
-      } else {
-        token.transfer(_extData.recipient, uint256(-_extData.extAmount));
-      }
+      token.transfer(_extData.recipient, uint256(-_extData.extAmount));
     }
     if (_extData.fee > 0) {
       token.transfer(_extData.relayer, _extData.fee);
