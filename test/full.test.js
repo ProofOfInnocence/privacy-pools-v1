@@ -12,6 +12,8 @@ const { encodeDataForBridge } = require('./utils')
 const config = require('../config')
 const { generate } = require('../src/0_generateAddresses')
 
+const { utxos, deposit } = require('../src/cli')
+
 const MERKLE_TREE_HEIGHT = 5
 const l1ChainId = 1
 const MAXIMUM_DEPOSIT_AMOUNT = utils.parseEther(process.env.MAXIMUM_DEPOSIT_AMOUNT || '1')
@@ -194,7 +196,10 @@ describe('TornadoPool', function () {
 
     const bobBalance = await token.balanceOf(bobEthAddress)
     expect(bobBalance).to.be.equal(bobWithdrawAmount)
+
+    console.log('Bob received funds', await utxos({ ethers, tornadoPool, keypair: bobKeypair }))
   })
+  
 
 
   it('should revert if onTransact called directly', async () => {
@@ -286,5 +291,40 @@ describe('TornadoPool', function () {
 
     // in report we can see the tx with NewCommitment event (this is how alice got money)
     // and the tx with NewNullifier event is where alice spent the UTXO
+  })
+
+  it('should deposit with single keypair', async function () {
+    const { tornadoPool } = await loadFixture(fixture)
+    const aliceDepositAmount = utils.parseEther('0.07')
+
+    const aliceKeypair = new Keypair() // contains private and public keys
+
+    await deposit({ ethers, tornadoPool, keypair: aliceKeypair, amount: aliceDepositAmount })
+
+
+    const filter = tornadoPool.filters.NewCommitment()
+    const fromBlock = await ethers.provider.getBlock()
+    const events = await tornadoPool.queryFilter(filter, fromBlock.number)
+
+    console.log('events', events)
+
+    let aliceReceiveUtxo
+    try {
+      aliceReceiveUtxo = Utxo.decrypt(
+        aliceKeypair.keypair,
+        events[0].args.encryptedOutput,
+        events[0].args.index,
+      )
+    } catch (e) {
+      console.log('e', e)
+      // we try to decrypt another output here because it shuffles outputs before sending to blockchain
+      aliceReceiveUtxo = Utxo.decrypt(
+        aliceKeypair.keypair,
+        events[1].args.encryptedOutput,
+        events[1].args.index,
+      )
+    }
+    expect(aliceReceiveUtxo.amount).to.be.equal(aliceDepositAmount)
+
   })
 })

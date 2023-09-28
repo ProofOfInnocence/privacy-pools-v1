@@ -16,15 +16,7 @@ async function buildMerkleTree({ tornadoPool }) {
   return new MerkleTree(MERKLE_TREE_HEIGHT, leaves, { hashFunction: poseidonHash2 })
 }
 
-async function getProof({
-  inputs,
-  outputs,
-  tree,
-  extAmount,
-  fee,
-  recipient,
-  relayer,
-}) {
+async function getProof({ inputs, outputs, tree, extAmount, fee, recipient, relayer }) {
   inputs = shuffle(inputs)
   outputs = shuffle(outputs)
 
@@ -55,7 +47,6 @@ async function getProof({
     encryptedInput1: inputs[0].encrypt(),
     encryptedInput2: inputs[1].encrypt(),
   }
-
 
   const extDataHash = getExtDataHash(extData)
   let input = {
