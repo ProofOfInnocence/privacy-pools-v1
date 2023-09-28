@@ -27,7 +27,6 @@ contract TornadoPool is MerkleTreeWithHistory, ReentrancyGuard {
   uint256 public constant MIN_EXT_AMOUNT_LIMIT = 0.5 ether;
 
   IVerifier public immutable verifier2;
-  IVerifier public immutable verifier16;
   IERC20 public immutable token;
 
   uint256 public lastBalance;
@@ -67,14 +66,12 @@ contract TornadoPool is MerkleTreeWithHistory, ReentrancyGuard {
   /**
     @dev The constructor
     @param _verifier2 the address of SNARK verifier for 2 inputs
-    @param _verifier16 the address of SNARK verifier for 16 inputs
     @param _levels hight of the commitments merkle tree
     @param _hasher hasher address for the merkle tree
     @param _token token address for the pool
   */
   constructor(
     IVerifier _verifier2,
-    IVerifier _verifier16,
     uint32 _levels,
     address _hasher,
     IERC20 _token,
@@ -83,7 +80,6 @@ contract TornadoPool is MerkleTreeWithHistory, ReentrancyGuard {
     MerkleTreeWithHistory(_levels, _hasher)
   {
     verifier2 = _verifier2;
-    verifier16 = _verifier16;
     token = _token;
     maximumDepositAmount = _maximumDepositAmount;
   }
@@ -194,34 +190,6 @@ contract TornadoPool is MerkleTreeWithHistory, ReentrancyGuard {
             uint256(_args.extDataHash),
             uint256(_args.inputNullifiers[0]),
             uint256(_args.inputNullifiers[1]),
-            uint256(_args.outputCommitments[0]),
-            uint256(_args.outputCommitments[1])
-          ]
-        );
-    } else if (_args.inputNullifiers.length == 16) {
-      return
-        verifier16.verifyProof(
-          _args.proof,
-          [
-            uint256(_args.root),
-            _args.publicAmount,
-            uint256(_args.extDataHash),
-            uint256(_args.inputNullifiers[0]),
-            uint256(_args.inputNullifiers[1]),
-            uint256(_args.inputNullifiers[2]),
-            uint256(_args.inputNullifiers[3]),
-            uint256(_args.inputNullifiers[4]),
-            uint256(_args.inputNullifiers[5]),
-            uint256(_args.inputNullifiers[6]),
-            uint256(_args.inputNullifiers[7]),
-            uint256(_args.inputNullifiers[8]),
-            uint256(_args.inputNullifiers[9]),
-            uint256(_args.inputNullifiers[10]),
-            uint256(_args.inputNullifiers[11]),
-            uint256(_args.inputNullifiers[12]),
-            uint256(_args.inputNullifiers[13]),
-            uint256(_args.inputNullifiers[14]),
-            uint256(_args.inputNullifiers[15]),
             uint256(_args.outputCommitments[0]),
             uint256(_args.outputCommitments[1])
           ]

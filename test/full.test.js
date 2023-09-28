@@ -29,7 +29,7 @@ describe('TornadoPool', function () {
     require('../scripts/compileHasher')
     const [sender, gov, multisig] = await ethers.getSigners()
     const verifier2 = await deploy('Verifier2')
-    const verifier16 = await deploy('Verifier16')
+    // const verifier16 = await deploy('Verifier16')
     const hasher = await deploy('Hasher')
 
     // const token = await deploy('PermittableToken', 'Wrapped ETH', 'WETH', 18, l1ChainId)
@@ -56,7 +56,6 @@ describe('TornadoPool', function () {
     const tornadoPool = await deploy(
       'TornadoPool',
       verifier2.address,
-      verifier16.address,
       MERKLE_TREE_HEIGHT,
       hasher.address,
       token.address,
@@ -214,16 +213,16 @@ describe('TornadoPool', function () {
     )
   })
 
-  it('should work with 16 inputs', async function () {
-    const { tornadoPool } = await loadFixture(fixture)
-    const aliceDepositAmount = utils.parseEther('0.07')
-    const aliceDepositUtxo = new Utxo({ amount: aliceDepositAmount })
-    await transaction({
-      tornadoPool,
-      inputs: [new Utxo(), new Utxo(), new Utxo()],
-      outputs: [aliceDepositUtxo],
-    })
-  })
+  // it('should work with 16 inputs', async function () {
+  //   const { tornadoPool } = await loadFixture(fixture)
+  //   const aliceDepositAmount = utils.parseEther('0.07')
+  //   const aliceDepositUtxo = new Utxo({ amount: aliceDepositAmount })
+  //   await transaction({
+  //     tornadoPool,
+  //     inputs: [new Utxo(), new Utxo(), new Utxo()],
+  //     outputs: [aliceDepositUtxo],
+  //   })
+  // })
 
   it('should be compliant', async function () {
     // basically verifier should check if a commitment and a nullifier hash are on chain
