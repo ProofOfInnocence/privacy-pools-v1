@@ -24,8 +24,6 @@ async function getProof({
   fee,
   recipient,
   relayer,
-  isL1Withdrawal,
-  l1Fee,
 }) {
   inputs = shuffle(inputs)
   outputs = shuffle(outputs)
@@ -54,11 +52,14 @@ async function getProof({
     fee: toFixedHex(fee),
     encryptedOutput1: outputs[0].encrypt(),
     encryptedOutput2: outputs[1].encrypt(),
-    isL1Withdrawal,
-    l1Fee,
+    // encryptedInput1: inputs[0].encrypt(),
+    // encryptedInput2: inputs[1].encrypt(),
   }
 
+  console.log('extData', extData)
+
   const extDataHash = getExtDataHash(extData)
+  console.log('extDataHash', extDataHash.toString())
   let input = {
     root: tree.root(),
     inputNullifier: inputs.map((x) => x.getNullifier()),
@@ -104,8 +105,6 @@ async function prepareTransaction({
   fee = 0,
   recipient = 0,
   relayer = 0,
-  isL1Withdrawal = false,
-  l1Fee = 0,
 }) {
   if (inputs.length > 16 || outputs.length > 2) {
     throw new Error('Incorrect inputs/outputs count')
@@ -129,8 +128,6 @@ async function prepareTransaction({
     fee,
     recipient,
     relayer,
-    isL1Withdrawal,
-    l1Fee,
   })
 
   return {
@@ -157,8 +154,11 @@ async function registerAndTransact({ tornadoPool, account, ...rest }) {
     ...rest,
   })
 
+  console.log('args', args)
+  console.log('extData', extData)
+
   const receipt = await tornadoPool.registerAndTransact(account, args, extData, {
-    gasLimit: 2e6,
+    gasLimit: 4e6,
   })
   await receipt.wait()
 }

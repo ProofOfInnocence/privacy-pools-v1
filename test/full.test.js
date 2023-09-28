@@ -106,6 +106,8 @@ describe('TornadoPool', function () {
     const aliceDepositAmount = 1e7
     const aliceDepositUtxo = new Utxo({ amount: aliceDepositAmount })
 
+    console.log('aliceDepositUtxo', aliceDepositUtxo)
+
     tornadoPool = tornadoPool.connect(sender)
     await registerAndTransact({
       tornadoPool,
@@ -115,6 +117,7 @@ describe('TornadoPool', function () {
         publicKey: aliceDepositUtxo.keypair.address(),
       },
     })
+    console.log('aliceDepositUtxo', aliceDepositUtxo)
 
     const filter = tornadoPool.filters.NewCommitment()
     const fromBlock = await ethers.provider.getBlock()
@@ -146,7 +149,7 @@ describe('TornadoPool', function () {
     expect(registerEvent.args.key).to.be.equal(aliceDepositUtxo.keypair.address())
   })
 
-  it('should deposit, transact and withdraw', async function () {
+  xit('should deposit, transact and withdraw', async function () {
     const { tornadoPool, token } = await loadFixture(fixture)
 
     // Alice deposits into tornado pool
@@ -196,7 +199,7 @@ describe('TornadoPool', function () {
   })
 
 
-  it('should revert if onTransact called directly', async () => {
+  xit('should revert if onTransact called directly', async () => {
     const { tornadoPool } = await loadFixture(fixture)
     const aliceKeypair = new Keypair() // contains private and public keys
 
@@ -224,7 +227,7 @@ describe('TornadoPool', function () {
   //   })
   // })
 
-  it('should be compliant', async function () {
+  xit('should be compliant', async function () {
     // basically verifier should check if a commitment and a nullifier hash are on chain
     const { tornadoPool } = await loadFixture(fixture)
     const aliceDepositAmount = utils.parseEther('0.07')

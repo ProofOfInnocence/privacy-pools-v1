@@ -41,8 +41,8 @@ contract TornadoPool is MerkleTreeWithHistory, ReentrancyGuard {
     uint256 fee;
     bytes encryptedOutput1;
     bytes encryptedOutput2;
-    bool isL1Withdrawal;
-    uint256 l1Fee;
+    // bytes encrypedInput1;
+    // bytes encrypedInput2;
   }
 
   struct Proof {
