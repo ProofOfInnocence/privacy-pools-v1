@@ -61,6 +61,7 @@ contract TornadoPool is MerkleTreeWithHistory, ReentrancyGuard {
 
   event NewCommitment(bytes32 commitment, uint256 index, bytes encryptedOutput);
   event NewNullifier(bytes32 nullifier, bytes encryptedInput);
+  event NewTxRecord(bytes32 inputNullifier1, bytes32 inputNullifier2, bytes32 outputCommitment1, bytes32 outputCommitment2, uint256 publicAmount, uint32 index);
   event PublicKey(address indexed owner, bytes key);
 
   /**
@@ -230,9 +231,14 @@ contract TornadoPool is MerkleTreeWithHistory, ReentrancyGuard {
     emit NewCommitment(_args.outputCommitments[1], nextIndex - 1, _extData.encryptedOutput2);
     emit NewNullifier(_args.inputNullifiers[0], _extData.encryptedInput1);
     emit NewNullifier(_args.inputNullifiers[1], _extData.encryptedInput2);
-    // for (uint256 i = 0; i < _args.inputNullifiers.length; i++) {
-    //   emit NewNullifier(_args.inputNullifiers[i]);
-    // }
+    emit NewTxRecord(
+      _args.inputNullifiers[0],
+      _args.inputNullifiers[1],
+      _args.outputCommitments[0],
+      _args.outputCommitments[1],
+      _args.publicAmount,
+      nextIndex - 2
+    );
   }
 
   function _configureLimits(uint256 _maximumDepositAmount) internal {

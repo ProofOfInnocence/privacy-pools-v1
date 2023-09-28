@@ -79,7 +79,6 @@ async function getProof({ inputs, outputs, tree, extAmount, fee, recipient, rela
     publicAmount: toFixedHex(input.publicAmount),
     extDataHash: toFixedHex(extDataHash),
   }
-  // console.log('Solidity args', args)
 
   return {
     extData,

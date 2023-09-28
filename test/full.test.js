@@ -193,8 +193,6 @@ describe('TornadoPool', function () {
 
     const bobBalance = await token.balanceOf(bobEthAddress)
     expect(bobBalance).to.be.equal(bobWithdrawAmount)
-
-    console.log('Bob received funds', await getUtxos({ ethers, tornadoPool, keypair: bobKeypair }))
   })
   
 
@@ -296,7 +294,7 @@ describe('TornadoPool', function () {
 
     const aliceKeypair = new Keypair() // contains private and public keys
 
-    await deposit({ ethers, tornadoPool, keypair: aliceKeypair, amount: aliceDepositAmount })
+    await deposit({ provider: ethers.provider, tornadoPool, keypair: aliceKeypair, amount: aliceDepositAmount })
 
 
     const filter = tornadoPool.filters.NewCommitment()
@@ -313,7 +311,7 @@ describe('TornadoPool', function () {
       events[1].args.index,
     )
     expect(aliceReceiveUtxo1.amount.add(aliceReceiveUtxo2.amount)).to.be.equal(aliceDepositAmount)
-    const aliceUtxos = await getUtxos({ ethers, tornadoPool, keypair: aliceKeypair })
+    const aliceUtxos = await getUtxos({ provider: ethers.provider, tornadoPool, keypair: aliceKeypair })
     expect(aliceUtxos.length).to.be.equal(1)
     expect(aliceUtxos[0].amount).to.be.equal(aliceDepositAmount)
   })
@@ -327,12 +325,12 @@ describe('TornadoPool', function () {
 
     const aliceKeypair = new Keypair() // contains private and public keys
 
-    await deposit({ ethers, tornadoPool, keypair: aliceKeypair, amount: aliceDepositAmount1 })
-    expect(await balance({ ethers, tornadoPool, keypair: aliceKeypair })).to.be.equal(aliceDepositAmount1)
-    await deposit({ ethers, tornadoPool, keypair: aliceKeypair, amount: aliceDepositAmount2 })
-    expect(await balance({ ethers, tornadoPool, keypair: aliceKeypair })).to.be.equal(aliceDepositAmount1.add(aliceDepositAmount2))
-    await withdraw({ ethers, tornadoPool, keypair: aliceKeypair, amount: aliceWithdrawAmount, recipient: bobEthAddress })
-    expect(await balance({ ethers, tornadoPool, keypair: aliceKeypair })).to.be.equal(aliceDepositAmount1.add(aliceDepositAmount2).sub(aliceWithdrawAmount))
+    await deposit({ provider: ethers.provider, tornadoPool, keypair: aliceKeypair, amount: aliceDepositAmount1 })
+    expect(await balance({ provider: ethers.provider, tornadoPool, keypair: aliceKeypair })).to.be.equal(aliceDepositAmount1)
+    await deposit({ provider: ethers.provider, tornadoPool, keypair: aliceKeypair, amount: aliceDepositAmount2 })
+    expect(await balance({ provider: ethers.provider, tornadoPool, keypair: aliceKeypair })).to.be.equal(aliceDepositAmount1.add(aliceDepositAmount2))
+    await withdraw({ provider: ethers.provider, tornadoPool, keypair: aliceKeypair, amount: aliceWithdrawAmount, recipient: bobEthAddress })
+    expect(await balance({ provider: ethers.provider, tornadoPool, keypair: aliceKeypair })).to.be.equal(aliceDepositAmount1.add(aliceDepositAmount2).sub(aliceWithdrawAmount))
 
   })
 
