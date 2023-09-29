@@ -1,7 +1,7 @@
 include "../node_modules/circomlib/circuits/poseidon.circom";
 include "../node_modules/circomlib/circuits/comparators.circom";
 include "./merkleProof.circom";
-include "./merkleTreeUpdater.circom"
+include "./merkleTreeUpdater.circom";
 include "./keypair.circom";
 
 /*
@@ -39,18 +39,23 @@ template IsNum2Bits(n) {
 
 // Universal JoinSplit transaction with nIns inputs and 2 outputs
 template Transaction(levels, nIns, nOuts, zeroLeaf) {
-    signal         input txRecordsMerkleRoot;
     signal private input txRecordPathElements[levels];
     signal private input txRecordPathIndex;
 
-    signal         input allowedTxRecordsMerkleRoot;
     signal private input allowedTxRecordPathElements[levels];
     signal private input allowedTxRecordPathIndex;
 
-    signal         input accInnocentNullifiersMerkleRoot;
-    signal         output newAccInnocentNullifiersMerkleRoot;
     signal private input accInnocentNullifierPathElements[nIns][levels];
     signal private input accInnocentNullifierPathIndex[nIns];
+
+    // step_in[0] = txRecordsMerkleRoot
+    // step_in[1] = allowedTxRecordsMerkleRoot
+    // step_in[2] = accInnocentNullifiersMerkleRoot
+    signal input step_in[3];
+    // step_out[0] = txRecordsMerkleRoot
+    // step_out[1] = allowedTxRecordsMerkleRoot
+    // step_out[2] = newAccInnocentNullifiersMerkleRoot
+    signal output step_out[3];
 
     signal private input accInnocentOutputPathElements[levels];
     signal private input accInnocentOutputPathIndex;
@@ -97,9 +102,10 @@ template Transaction(levels, nIns, nOuts, zeroLeaf) {
     for (var i = 0; i < levels; i++) {
         txRecordTree.pathElements[i] <== txRecordPathElements[i];
     }
-    txRecordsMerkleRoot === txRecordTree.root;
+    step_in[0] === txRecordTree.root;
+    step_out[0] <== step_in[0];
 
-    // 3 - if publicAmount is positive (deposit), check if it is in allowlist
+    // 3 - if publicAmount is positive (deposit), check if it is in allowlist  SUBJECT TO CHANGE
     component allowedTxRecordTree = MerkleProof(levels);
     allowedTxRecordTree.leaf <== txRecordHasher.out;
     allowedTxRecordTree.pathIndices <== allowedTxRecordPathIndex;
@@ -107,14 +113,14 @@ template Transaction(levels, nIns, nOuts, zeroLeaf) {
         allowedTxRecordTree.pathElements[i] <== allowedTxRecordPathElements[i];
     }
     component checkAllowlistRoot = ForceEqualIfEnabled();
-    checkAllowlistRoot.in[0] <== allowedTxRecordsMerkleRoot;
+    checkAllowlistRoot.in[0] <== step_in[1];
     checkAllowlistRoot.in[1] <== allowedTxRecordTree.root;
 
     component isDeposit = IsNum2Bits(240);
     isDeposit.in <== publicAmount;
     checkAllowlistRoot.enabled <== isDeposit.isLower;
 
-
+    step_out[1] <== step_in[1];
 
 
     component inKeypair[nIns];
@@ -154,7 +160,7 @@ template Transaction(levels, nIns, nOuts, zeroLeaf) {
 
         // check merkle proof only if amount is non-zero
         inCheckRoot[tx] = ForceEqualIfEnabled();
-        inCheckRoot[tx].in[0] <== accInnocentNullifiersMerkleRoot;
+        inCheckRoot[tx].in[0] <== step_in[2];
         inCheckRoot[tx].in[1] <== inTree[tx].root;
         inCheckRoot[tx].enabled <== inAmount[tx];
 
@@ -172,7 +178,7 @@ template Transaction(levels, nIns, nOuts, zeroLeaf) {
     component outNullifierHasher[nOuts];
     component outTree[nOuts];
     component outCheckRoot[nOuts];
-    var sumIns = 0;
+    // var sumIns = 0;
 
     // verify correctness of transaction inputs
     for (var tx = 0; tx < nOuts; tx++) {
@@ -196,19 +202,19 @@ template Transaction(levels, nIns, nOuts, zeroLeaf) {
     }
 
     component treeUpdater = MerkleTreeUpdater(levels, 1, zeroLeaf);
-    treeUpdater.oldRoot <== accInnocentNullifiersMerkleRoot;
+    treeUpdater.oldRoot <== step_in[2];
 
     // update merkle tree with output nullifiers
     for (var tx = 0; tx < nOuts; tx++) {
         treeUpdater.leaves[tx] <== outNullifierHasher[tx].out;
     }
 
-    treeUpdater.pathIndices <== accInnocentOutputPathIndex; // TODO: check if this is correct
+    treeUpdater.pathIndices <== accInnocentOutputPathIndex; // TODO IN CREATING INPUTS: check if this is correct
     for (var i = 0; i < levels - 1; i++) {
-        treeUpdater.pathElements[i] <== accInnocentOutputPathElements[i]; // TODO: check if this is correct
+        treeUpdater.pathElements[i] <== accInnocentOutputPathElements[i]; // TODO IN CREATING INPUTS: check if this is correct
     }
 
-    newAccInnocentNullifiersMerkleRoot <== treeUpdater.newRoot;
+    step_out[2] <== treeUpdater.newRoot;
 
 
 }
