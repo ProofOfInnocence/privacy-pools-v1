@@ -87,7 +87,7 @@ template Transaction(levels, nIns, nOuts, zeroLeaf) {
     signal private input outAmount[nOuts];
     signal private input outPubkey[nOuts];
     signal private input outBlinding[nOuts];
-    signal private input outPrivateKey[nOuts];
+    // signal private input outPrivateKey[nOuts];
     signal private input outPathIndices[nOuts];
 
 
@@ -180,7 +180,6 @@ template Transaction(levels, nIns, nOuts, zeroLeaf) {
         // need to be checked either).
     }
 
-    component outKeypair[nOuts];
     component outSignature[nOuts];
     component outCommitmentHasher[nOuts];
     // component outNullifierHasher[nOuts];
@@ -191,12 +190,13 @@ template Transaction(levels, nIns, nOuts, zeroLeaf) {
 
     // verify correctness of tx outputs and calculate Hash(outCommitment, idx)
     for (var tx = 0; tx < nOuts; tx++) {
-        outKeypair[tx] = Keypair();
-        outKeypair[tx].privateKey <== outPrivateKey[tx];
+        // outKeypair[tx] = Keypair();
+        // outKeypair[tx].privateKey <== outPrivateKey[tx];
 
         outCommitmentHasher[tx] = Poseidon(3);
         outCommitmentHasher[tx].inputs[0] <== outAmount[tx];
-        outCommitmentHasher[tx].inputs[1] <== outKeypair[tx].publicKey;
+        // outCommitmentHasher[tx].inputs[1] <== outKeypair[tx].publicKey
+        outCommitmentHasher[tx].inputs[1] <== outPubkey[tx];
         outCommitmentHasher[tx].inputs[2] <== outBlinding[tx];
 
         outCommitmentHasher[tx].out === outputCommitment[tx];
