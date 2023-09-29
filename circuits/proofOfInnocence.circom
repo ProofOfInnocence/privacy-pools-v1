@@ -37,7 +37,7 @@ template IsNum2Bits(n) {
 }
 
 
-// Universal JoinSplit transaction with nIns inputs and 2 outputs
+// Transaction with 2 inputs and 2 outputs
 template Transaction(levels, nIns, nOuts, zeroLeaf) {
     signal private input txRecordPathElements[levels];
     signal private input txRecordPathIndex;
@@ -45,16 +45,16 @@ template Transaction(levels, nIns, nOuts, zeroLeaf) {
     signal private input allowedTxRecordPathElements[levels];
     signal private input allowedTxRecordPathIndex;
 
-    signal private input accInnocentNullifierPathElements[nIns][levels];
-    signal private input accInnocentNullifierPathIndex[nIns];
+    signal private input accInnocentCommitmentPathElements[nIns][levels];
+    signal private input accInnocentCommitmentPathIndex[nIns];
 
     // step_in[0] = txRecordsMerkleRoot
     // step_in[1] = allowedTxRecordsMerkleRoot
-    // step_in[2] = accInnocentNullifiersMerkleRoot
+    // step_in[2] = accInnocentCommitmentMerkleRoot
     signal input step_in[3];
     // step_out[0] = txRecordsMerkleRoot
     // step_out[1] = allowedTxRecordsMerkleRoot
-    // step_out[2] = newAccInnocentNullifiersMerkleRoot
+    // step_out[2] = newAccInnocentCommitmentMerkleRoot
     signal output step_out[3];
 
     signal private input accInnocentOutputPathElements[levels];
@@ -155,7 +155,7 @@ template Transaction(levels, nIns, nOuts, zeroLeaf) {
         inTree[tx].leaf <== inputNullifier[tx];
         inTree[tx].pathIndices <== accInnocentNullifierPathIndex[tx];
         for (var i = 0; i < levels; i++) {
-            inTree[tx].pathElements[i] <== accInnocentNullifierPathElements[tx][i];
+            inTree[tx].pathElements[i] <== accInnocentCommitmentPathElements[tx][i];
         }
 
         // check merkle proof only if amount is non-zero
@@ -169,46 +169,54 @@ template Transaction(levels, nIns, nOuts, zeroLeaf) {
         // need to be checked either).
     }
 
-
-    // calculate output nulliier
-
     component outKeypair[nOuts];
     component outSignature[nOuts];
-    component outCommitmentHasher[nOuts];
-    component outNullifierHasher[nOuts];
+    // component outCommitmentHasher[nOuts];
+    // component outNullifierHasher[nOuts];
+    component accInnocentOutputHasher[nOuts];
     component outTree[nOuts];
     component outCheckRoot[nOuts];
     // var sumIns = 0;
 
-    // verify correctness of transaction inputs
+    // verify correctness of tx outputs and calculate Hash(outCommitment, idx)
     for (var tx = 0; tx < nOuts; tx++) {
-        outKeypair[tx] = Keypair();
-        outKeypair[tx].privateKey <== outPrivateKey[tx];
+        // outKeypair[tx] = Keypair();
+        // outKeypair[tx].privateKey <== outPrivateKey[tx];
 
-        outCommitmentHasher[tx] = Poseidon(3);
-        outCommitmentHasher[tx].inputs[0] <== outAmount[tx];
-        outCommitmentHasher[tx].inputs[1] <== outKeypair[tx].publicKey;
-        outCommitmentHasher[tx].inputs[2] <== outBlinding[tx];
+        // outCommitmentHasher[tx] = Poseidon(3);
+        // outCommitmentHasher[tx].inputs[0] <== outAmount[tx];
+        // outCommitmentHasher[tx].inputs[1] <== outKeypair[tx].publicKey;
+        // outCommitmentHasher[tx].inputs[2] <== outBlinding[tx];
 
-        outSignature[tx] = Signature();
-        outSignature[tx].privateKey <== outPrivateKey[tx];
-        outSignature[tx].commitment <== outCommitmentHasher[tx].out;
-        outSignature[tx].merklePath <== outPathIndices[tx];
+        // outSignature[tx] = Signature();
+        // outSignature[tx].privateKey <== outPrivateKey[tx];
+        // outSignature[tx].commitment <== outCommitmentHasher[tx].out;
+        // outSignature[tx].merklePath <== outPathIndices[tx];
 
-        outNullifierHasher[tx] = Poseidon(3);
-        outNullifierHasher[tx].inputs[0] <== outCommitmentHasher[tx].out;
-        outNullifierHasher[tx].inputs[1] <== outputsStartIndex + tx;
-        outNullifierHasher[tx].inputs[2] <== outSignature[tx].out;
+        // outNullifierHasher[tx] = Poseidon(3);
+        // outNullifierHasher[tx].inputs[0] <== outCommitmentHasher[tx].out;
+        // outNullifierHasher[tx].inputs[1] <== outputsStartIndex + tx;
+        // outNullifierHasher[tx].inputs[2] <== outSignature[tx].out;
+
+        accInnocentOutputHasher[tx] = Poseidon(2);
+        accInnocentOutputHasher[tx].inputs[0] <== outCommitment[tx];
+        accInnocentOutputHasher[tx].inputs[1] <== outputsStartIndex + tx;
+
     }
 
+    // accumulate innocent output commitments with idx
     component treeUpdater = MerkleTreeUpdater(levels, 1, zeroLeaf);
     treeUpdater.oldRoot <== step_in[2];
 
-    // update merkle tree with output nullifiers
+    // update merkle tree with output commitments
+    // for (var tx = 0; tx < nOuts; tx++) {
+    //     treeUpdater.leaves[tx] <== outNullifierHasher[tx].out;
+    // }
     for (var tx = 0; tx < nOuts; tx++) {
-        treeUpdater.leaves[tx] <== outNullifierHasher[tx].out;
+        treeUpdater.leaves[tx] <== accInnocentOutputHasher[tx].out;
     }
 
+    // at every step, index must be increased by 2
     treeUpdater.pathIndices <== accInnocentOutputPathIndex; // TODO IN CREATING INPUTS: check if this is correct
     for (var i = 0; i < levels - 1; i++) {
         treeUpdater.pathElements[i] <== accInnocentOutputPathElements[i]; // TODO IN CREATING INPUTS: check if this is correct
