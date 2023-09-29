@@ -54,9 +54,9 @@ template Transaction(levels, nIns, nOuts, zeroLeaf) {
     //checks if last step is reached
     signal private input isLastStep;
 
-    signal private input step_in_0;
-    signal private input step_in_1;
-    signal private input step_in_2;
+    signal private input txRecordsMerkleRoot;
+    signal private input allowedTxRecordsMerkleRoot;
+    signal private input accInnocentCommitmentMerkleRoot;
     // step_in = Hash(txRecordsMerkleRoot, allowedTxRecordsMerkleRoot, accInnocentCommitmentMerkleRoot)
     signal input step_in;
     // step_out_0 = txRecordsMerkleRoot
@@ -111,7 +111,7 @@ template Transaction(levels, nIns, nOuts, zeroLeaf) {
     for (var i = 0; i < levels; i++) {
         txRecordTree.pathElements[i] <== txRecordPathElements[i];
     }
-    step_in_0 === txRecordTree.root;
+ txRecordsMerkleRoot === txRecordTree.root;
     // 3 - if publicAmount is positive (deposit), check if it is in allowlist  SUBJECT TO CHANGE
     component allowedTxRecordTree = MerkleProof(levels);
     allowedTxRecordTree.leaf <== txRecordHasher.out;
@@ -120,7 +120,7 @@ template Transaction(levels, nIns, nOuts, zeroLeaf) {
         allowedTxRecordTree.pathElements[i] <== allowedTxRecordPathElements[i];
     }
     component checkAllowlistRoot = ForceEqualIfEnabled();
-    checkAllowlistRoot.in[0] <== step_in_1;
+    checkAllowlistRoot.in[0] <== allowedTxRecordsMerkleRoot;
     checkAllowlistRoot.in[1] <== allowedTxRecordTree.root;
     //check if publicAmount is positive
     component isDeposit = IsNum2Bits(240);
@@ -171,7 +171,7 @@ template Transaction(levels, nIns, nOuts, zeroLeaf) {
 
         // check merkle proof only if amount is non-zero
         inCheckRoot[tx] = ForceEqualIfEnabled();
-        inCheckRoot[tx].in[0] <== step_in_2;
+        inCheckRoot[tx].in[0] <== accInnocentCommitmentMerkleRoot;
         inCheckRoot[tx].in[1] <== inTree[tx].root;
         inCheckRoot[tx].enabled <== inAmount[tx];
 
@@ -219,7 +219,7 @@ template Transaction(levels, nIns, nOuts, zeroLeaf) {
 
     // accumulate innocent output commitments with idx
     component treeUpdater = MerkleTreeUpdater(levels, 1, zeroLeaf);
-    treeUpdater.oldRoot <== step_in_2;
+    treeUpdater.oldRoot <== accInnocentCommitmentMerkleRoot;
 
     // update merkle tree with output commitments
     // for (var tx = 0; tx < nOuts; tx++) {
@@ -237,8 +237,8 @@ template Transaction(levels, nIns, nOuts, zeroLeaf) {
 
 
     component stepHasher = Poseidon(3);
-    stepHasher.inputs[0] <== step_in_0;
-    stepHasher.inputs[1] <== step_in_1;
+    stepHasher.inputs[0] <== txRecordsMerkleRoot;
+    stepHasher.inputs[1] <== allowedTxRecordsMerkleRoot;
     stepHasher.inputs[2] <== treeUpdater.newRoot;
     
     step_out <== stepHasher.out + isLastStep * (txRecordHasher.out - stepHasher.out);
