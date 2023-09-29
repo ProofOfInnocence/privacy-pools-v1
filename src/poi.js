@@ -1,8 +1,9 @@
 const Utxo = require('./utxo')
-const { toFixedHex } = require('./utils')
-
+const { toFixedHex, poseidonHash2 } = require('./utils')
 const TxRecord = require('./txRecord')
+const MerkleTree = require('fixed-merkle-tree')
 
+const MERKLE_TREE_HEIGHT = 5
 const {
   getUtxos,
   deposit,
@@ -128,12 +129,26 @@ async function getPoiSteps({ provider, tornadoPool, keypair, txRecordEvent }) {
   if (todoProve.size > 0) {
     throw new Error('Not enough proofs')
   }
-  return steps
+  return { steps: steps.reverse(), txRecordEvents }
 }
 
-async function proveInclusion({ provider, tornadoPool, keypair, txHash }) {
+function buildTxRecordMerkleTree({ events }) {
+  const leaves = events
+    .sort((a, b) => a.args.index - b.args.index)
+    .map((e) => toFixedHex(TxRecord.hashFromEvent(e)))
+  return new MerkleTree(MERKLE_TREE_HEIGHT, leaves, { hashFunction: poseidonHash2 })
+}
+
+async function proveInclusion({ provider, tornadoPool, keypair, allowlist, txHash }) {
   const event = await getTxRecord({ provider, tornadoPool, txHash })
-  const steps = await getPoiSteps({ provider, tornadoPool, keypair, txRecordEvent: event })
+  const { steps, txRecordEvents } = await getPoiSteps({
+    provider,
+    tornadoPool,
+    keypair,
+    txRecordEvent: event,
+  })
+  const txRecordMerkleTree = buildTxRecordMerkleTree({ events: txRecordEvents })
+  const allowedTxRecordsMerkleTree = buildTxRecordMerkleTree({ events: txRecordEvents })
   console.log(steps)
 }
 

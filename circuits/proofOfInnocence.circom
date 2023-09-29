@@ -74,7 +74,6 @@ template Transaction(levels, nIns, nOuts, zeroLeaf) {
     signal private input outPubkey[nOuts];
     signal private input outBlinding[nOuts];
     signal private input outPrivateKey[nOuts];
-    signal private input outPathIndices[nOuts];
 
 
     // 1 - calculate txRecord
@@ -187,7 +186,7 @@ template Transaction(levels, nIns, nOuts, zeroLeaf) {
         outSignature[tx] = Signature();
         outSignature[tx].privateKey <== outPrivateKey[tx];
         outSignature[tx].commitment <== outCommitmentHasher[tx].out;
-        outSignature[tx].merklePath <== outPathIndices[tx];
+        outSignature[tx].merklePath <== outputsStartIndex + tx;
 
         outNullifierHasher[tx] = Poseidon(3);
         outNullifierHasher[tx].inputs[0] <== outCommitmentHasher[tx].out;
