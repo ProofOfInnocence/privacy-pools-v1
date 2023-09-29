@@ -9,7 +9,8 @@ const { transaction, registerAndTransact, prepareTransaction, buildMerkleTree } 
 const { toFixedHex, poseidonHash } = require('../src/utils')
 const { Keypair } = require('../src/keypair')
 
-const { getUtxos, deposit, withdraw, balance, proveInclusion } = require('../src/cli')
+const { getUtxos, deposit, withdraw, balance } = require('../src/cli')
+const { proveInclusion } = require('../src/poi')
 
 const MERKLE_TREE_HEIGHT = 5
 const l1ChainId = 1
