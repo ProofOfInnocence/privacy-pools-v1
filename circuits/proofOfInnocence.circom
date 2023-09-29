@@ -16,6 +16,8 @@ commitment = hash(amount, pubKey, blinding)
 nullifier = hash(commitment, merklePath, sign(privKey, commitment, merklePath))
 */
 
+
+// checks if a number is bigger than a constant
 template IsNum2Bits(n) {
     signal input in;
     signal output out[n];
@@ -39,12 +41,14 @@ template IsNum2Bits(n) {
 
 // Transaction with 2 inputs and 2 outputs
 template Transaction(levels, nIns, nOuts, zeroLeaf) {
+
+    // First MT: txRecordMT created by events
     signal private input txRecordPathElements[levels];
     signal private input txRecordPathIndex;
-
+    // Second MT: allowedTxRecordMT given by the authorities
     signal private input allowedTxRecordPathElements[levels];
     signal private input allowedTxRecordPathIndex;
-
+    // Third MT: accInnocentCommitmentMT created by the user
     signal private input accInnocentCommitmentPathElements[nIns][levels];
     signal private input accInnocentCommitmentPathIndex[nIns];
 
@@ -56,13 +60,14 @@ template Transaction(levels, nIns, nOuts, zeroLeaf) {
     // step_out[1] = allowedTxRecordsMerkleRoot
     // step_out[2] = newAccInnocentCommitmentMerkleRoot
     signal output step_out[3];
-
+    // info belongs to outputCommitments helping writing them in accInnocentCommitmentMT
     signal private input accInnocentOutputPathElements[levels];
     signal private input accInnocentOutputPathIndex;
     // extAmount = external amount used for deposits and withdrawals
     // correct extAmount range is enforced on the smart contract
     // publicAmount = extAmount - fee
     signal private input publicAmount;
+    // outputsStartIndex = index of the first outputCommitment in the commitmentsMT from the contract
     signal private input outputsStartIndex;
 
     // data for transaction inputs
@@ -103,8 +108,6 @@ template Transaction(levels, nIns, nOuts, zeroLeaf) {
         txRecordTree.pathElements[i] <== txRecordPathElements[i];
     }
     step_in[0] === txRecordTree.root;
-    step_out[0] <== step_in[0];
-
     // 3 - if publicAmount is positive (deposit), check if it is in allowlist  SUBJECT TO CHANGE
     component allowedTxRecordTree = MerkleProof(levels);
     allowedTxRecordTree.leaf <== txRecordHasher.out;
@@ -115,20 +118,19 @@ template Transaction(levels, nIns, nOuts, zeroLeaf) {
     component checkAllowlistRoot = ForceEqualIfEnabled();
     checkAllowlistRoot.in[0] <== step_in[1];
     checkAllowlistRoot.in[1] <== allowedTxRecordTree.root;
-
+    //check if publicAmount is positive
     component isDeposit = IsNum2Bits(240);
     isDeposit.in <== publicAmount;
     checkAllowlistRoot.enabled <== isDeposit.isLower;
 
-    step_out[1] <== step_in[1];
-
-
+    // TODO: remove keypair calculation
     component inKeypair[nIns];
     component inSignature[nIns];
     component inCommitmentHasher[nIns];
     component inNullifierHasher[nIns];
     component inTree[nIns];
     component inCheckRoot[nIns];
+    component inCommitmentandIdxHasher[nIns];
 
     // verify correctness of transaction inputs
     for (var tx = 0; tx < nIns; tx++) {
@@ -151,9 +153,14 @@ template Transaction(levels, nIns, nOuts, zeroLeaf) {
         inNullifierHasher[tx].inputs[2] <== inSignature[tx].out;
         inNullifierHasher[tx].out === inputNullifier[tx];
 
+        inCommitmentandIdxHasher[tx] = Poseidon(2);
+        inCommitmentandIdxHasher[tx].inputs[0] <== inCommitmentHasher[tx].out;
+        inCommitmentandIdxHasher[tx].inputs[1] <== inPathIndices[tx];
+
+        // check if input commitments is in the accInnocentCommitmentMerkleTree 
         inTree[tx] = MerkleProof(levels);
-        inTree[tx].leaf <== inputNullifier[tx];
-        inTree[tx].pathIndices <== accInnocentNullifierPathIndex[tx];
+        inTree[tx].leaf <== inCommitmentandIdxHasher[tx].out;
+        inTree[tx].pathIndices <== accInnocentCommitmentPathIndex[tx];
         for (var i = 0; i < levels; i++) {
             inTree[tx].pathElements[i] <== accInnocentCommitmentPathElements[tx][i];
         }
@@ -171,7 +178,7 @@ template Transaction(levels, nIns, nOuts, zeroLeaf) {
 
     component outKeypair[nOuts];
     component outSignature[nOuts];
-    // component outCommitmentHasher[nOuts];
+     component outCommitmentHasher[nOuts];
     // component outNullifierHasher[nOuts];
     component accInnocentOutputHasher[nOuts];
     component outTree[nOuts];
@@ -180,13 +187,15 @@ template Transaction(levels, nIns, nOuts, zeroLeaf) {
 
     // verify correctness of tx outputs and calculate Hash(outCommitment, idx)
     for (var tx = 0; tx < nOuts; tx++) {
-        // outKeypair[tx] = Keypair();
-        // outKeypair[tx].privateKey <== outPrivateKey[tx];
+        outKeypair[tx] = Keypair();
+        outKeypair[tx].privateKey <== outPrivateKey[tx];
 
-        // outCommitmentHasher[tx] = Poseidon(3);
-        // outCommitmentHasher[tx].inputs[0] <== outAmount[tx];
-        // outCommitmentHasher[tx].inputs[1] <== outKeypair[tx].publicKey;
-        // outCommitmentHasher[tx].inputs[2] <== outBlinding[tx];
+        outCommitmentHasher[tx] = Poseidon(3);
+        outCommitmentHasher[tx].inputs[0] <== outAmount[tx];
+        outCommitmentHasher[tx].inputs[1] <== outKeypair[tx].publicKey;
+        outCommitmentHasher[tx].inputs[2] <== outBlinding[tx];
+
+        outCommitmentHasher[tx].out === outputCommitment[tx];
 
         // outSignature[tx] = Signature();
         // outSignature[tx].privateKey <== outPrivateKey[tx];
@@ -199,7 +208,7 @@ template Transaction(levels, nIns, nOuts, zeroLeaf) {
         // outNullifierHasher[tx].inputs[2] <== outSignature[tx].out;
 
         accInnocentOutputHasher[tx] = Poseidon(2);
-        accInnocentOutputHasher[tx].inputs[0] <== outCommitment[tx];
+        accInnocentOutputHasher[tx].inputs[0] <== outputCommitment[tx];
         accInnocentOutputHasher[tx].inputs[1] <== outputsStartIndex + tx;
 
     }
@@ -222,8 +231,9 @@ template Transaction(levels, nIns, nOuts, zeroLeaf) {
         treeUpdater.pathElements[i] <== accInnocentOutputPathElements[i]; // TODO IN CREATING INPUTS: check if this is correct
     }
 
+    step_out[0] <== step_in[0];
+    step_out[1] <== step_in[1];
     step_out[2] <== treeUpdater.newRoot;
-
 
 }
 
