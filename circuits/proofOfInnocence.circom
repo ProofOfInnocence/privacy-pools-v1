@@ -91,6 +91,7 @@ template Transaction(levels, nIns, nOuts, zeroLeaf) {
     signal private input outPathIndices[nOuts];
 
 
+
     // 1 - calculate txRecord
     component inputsOutputsHasher = Poseidon(nIns + nOuts);
     for (var i = 0; i < nIns; i++) {
@@ -214,6 +215,7 @@ template Transaction(levels, nIns, nOuts, zeroLeaf) {
         accInnocentOutputHasher[tx] = Poseidon(2);
         accInnocentOutputHasher[tx].inputs[0] <== outputCommitment[tx];
         accInnocentOutputHasher[tx].inputs[1] <== outputsStartIndex + tx;
+
 
     }
 
