@@ -1,7 +1,8 @@
 include "../node_modules/circomlib/circuits/poseidon.circom";
 include "../node_modules/circomlib/circuits/comparators.circom";
-include "./merkleProof.circom"
-include "./keypair.circom"
+include "./merkleProof.circom";
+include "./merkleTreeUpdater.circom"
+include "./keypair.circom";
 
 /*
 Utxo structure:
@@ -50,6 +51,9 @@ template Transaction(levels, nIns, nOuts, zeroLeaf) {
     signal         output newAccInnocentNullifiersMerkleRoot;
     signal private input accInnocentNullifierPathElements[nIns][levels];
     signal private input accInnocentNullifierPathIndex[nIns];
+
+    signal private input accInnocentOutputPathElements[levels];
+    signal private input accInnocentOutputPathIndex;
     // extAmount = external amount used for deposits and withdrawals
     // correct extAmount range is enforced on the smart contract
     // publicAmount = extAmount - fee
@@ -69,6 +73,8 @@ template Transaction(levels, nIns, nOuts, zeroLeaf) {
     signal private input outAmount[nOuts];
     signal private input outPubkey[nOuts];
     signal private input outBlinding[nOuts];
+    signal private input outPrivateKey[nOuts];
+    signal private input outPathIndices[nOuts];
 
 
     // 1 - calculate txRecord
@@ -101,8 +107,8 @@ template Transaction(levels, nIns, nOuts, zeroLeaf) {
         allowedTxRecordTree.pathElements[i] <== allowedTxRecordPathElements[i];
     }
     component checkAllowlistRoot = ForceEqualIfEnabled();
-    checkAllowlistRoot.in[0] <== root;
-    checkAllowlistRoot.in[1] <== inTree[tx].root;
+    checkAllowlistRoot.in[0] <== allowedTxRecordsMerkleRoot;
+    checkAllowlistRoot.in[1] <== allowedTxRecordTree.root;
 
     component isDeposit = IsNum2Bits(240);
     isDeposit.in <== publicAmount;
@@ -197,12 +203,16 @@ template Transaction(levels, nIns, nOuts, zeroLeaf) {
         treeUpdater.leaves[tx] <== outNullifierHasher[tx].out;
     }
 
-    treeUpdater.pathIndices <== accInnocentNullifierPathIndex; // TODO: check if this is correct
+    treeUpdater.pathIndices <== accInnocentOutputPathIndex; // TODO: check if this is correct
     for (var i = 0; i < levels - 1; i++) {
-        treeUpdater.pathElements[i] <== accInnocentNullifierPathElements[i]; // TODO: check if this is correct
+        treeUpdater.pathElements[i] <== accInnocentOutputPathElements[i]; // TODO: check if this is correct
     }
 
     newAccInnocentNullifiersMerkleRoot <== treeUpdater.newRoot;
 
 
 }
+
+// zeroLeaf = Poseidon(zero, zero)
+// default `zero` value is keccak256("tornado") % FIELD_SIZE = 21663839004416932945382355908790599225266501822907911457504978515578255421292
+component main = Transaction(23, 2, 2, 11850551329423159860688778991827824730037759162201783566284850822760196767874);
