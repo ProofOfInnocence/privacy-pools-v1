@@ -1,7 +1,7 @@
 include "../node_modules/circomlib/circuits/poseidon.circom";
 include "../node_modules/circomlib/circuits/comparators.circom";
 include "./merkleProof.circom";
-include "./merkleTreeUpdater.circom"
+include "./merkleTreeUpdater.circom";
 include "./keypair.circom";
 
 /*
@@ -16,6 +16,8 @@ commitment = hash(amount, pubKey, blinding)
 nullifier = hash(commitment, merklePath, sign(privKey, commitment, merklePath))
 */
 
+
+// checks if a number is bigger than a constant
 template IsNum2Bits(n) {
     signal input in;
     signal output out[n];
@@ -37,27 +39,39 @@ template IsNum2Bits(n) {
 }
 
 
-// Universal JoinSplit transaction with nIns inputs and 2 outputs
+// Transaction with 2 inputs and 2 outputs
 template Transaction(levels, nIns, nOuts, zeroLeaf) {
-    signal         input txRecordsMerkleRoot;
+
+    // First MT: txRecordMT created by events
     signal private input txRecordPathElements[levels];
     signal private input txRecordPathIndex;
-
-    signal         input allowedTxRecordsMerkleRoot;
+    // Second MT: allowedTxRecordMT given by the authorities
     signal private input allowedTxRecordPathElements[levels];
     signal private input allowedTxRecordPathIndex;
+    // Third MT: accInnocentCommitmentMT created by the user
+    signal private input accInnocentCommitmentPathElements[nIns][levels];
+    signal private input accInnocentCommitmentPathIndex[nIns];
+    //checks if last step is reached
+    signal private input isLastStep;
 
-    signal         input accInnocentNullifiersMerkleRoot;
-    signal         output newAccInnocentNullifiersMerkleRoot;
-    signal private input accInnocentNullifierPathElements[nIns][levels];
-    signal private input accInnocentNullifierPathIndex[nIns];
-
+    signal private input txRecordsMerkleRoot;
+    signal private input allowedTxRecordsMerkleRoot;
+    signal private input accInnocentCommitmentMerkleRoot;
+    // step_in = Hash(txRecordsMerkleRoot, allowedTxRecordsMerkleRoot, accInnocentCommitmentMerkleRoot)
+    signal input step_in;
+    // step_out_0 = txRecordsMerkleRoot
+    // step_out_1 = allowedTxRecordsMerkleRoot
+    // step_out_2 = newAccInnocentCommitmentMerkleRoot
+    // step_out = Hash(txRecordsMerkleRoot, allowedTxRecordsMerkleRoot, newAccInnocentCommitmentMerkleRoot)
+    signal output step_out;
+    // info belongs to outputCommitments helping writing them in accInnocentCommitmentMT
     signal private input accInnocentOutputPathElements[levels];
     signal private input accInnocentOutputPathIndex;
     // extAmount = external amount used for deposits and withdrawals
     // correct extAmount range is enforced on the smart contract
     // publicAmount = extAmount - fee
     signal private input publicAmount;
+    // outputsStartIndex = index of the first outputCommitment in the commitmentMT from the contract
     signal private input outputsStartIndex;
 
     // data for transaction inputs
@@ -73,7 +87,9 @@ template Transaction(levels, nIns, nOuts, zeroLeaf) {
     signal private input outAmount[nOuts];
     signal private input outPubkey[nOuts];
     signal private input outBlinding[nOuts];
-    signal private input outPrivateKey[nOuts];
+    // signal private input outPrivateKey[nOuts];
+    signal private input outPathIndices[nOuts];
+
 
 
     // 1 - calculate txRecord
@@ -96,9 +112,8 @@ template Transaction(levels, nIns, nOuts, zeroLeaf) {
     for (var i = 0; i < levels; i++) {
         txRecordTree.pathElements[i] <== txRecordPathElements[i];
     }
-    txRecordsMerkleRoot === txRecordTree.root;
-
-    // 3 - if publicAmount is positive (deposit), check if it is in allowlist
+ txRecordsMerkleRoot === txRecordTree.root;
+    // 3 - if publicAmount is positive (deposit), check if it is in allowlist  SUBJECT TO CHANGE
     component allowedTxRecordTree = MerkleProof(levels);
     allowedTxRecordTree.leaf <== txRecordHasher.out;
     allowedTxRecordTree.pathIndices <== allowedTxRecordPathIndex;
@@ -108,20 +123,19 @@ template Transaction(levels, nIns, nOuts, zeroLeaf) {
     component checkAllowlistRoot = ForceEqualIfEnabled();
     checkAllowlistRoot.in[0] <== allowedTxRecordsMerkleRoot;
     checkAllowlistRoot.in[1] <== allowedTxRecordTree.root;
-
+    //check if publicAmount is positive
     component isDeposit = IsNum2Bits(240);
     isDeposit.in <== publicAmount;
     checkAllowlistRoot.enabled <== isDeposit.isLower;
 
-
-
-
+    // TODO: remove keypair calculation
     component inKeypair[nIns];
     component inSignature[nIns];
     component inCommitmentHasher[nIns];
     component inNullifierHasher[nIns];
     component inTree[nIns];
     component inCheckRoot[nIns];
+    component inCommitmentandIdxHasher[nIns];
 
     // verify correctness of transaction inputs
     for (var tx = 0; tx < nIns; tx++) {
@@ -144,16 +158,21 @@ template Transaction(levels, nIns, nOuts, zeroLeaf) {
         inNullifierHasher[tx].inputs[2] <== inSignature[tx].out;
         inNullifierHasher[tx].out === inputNullifier[tx];
 
+        inCommitmentandIdxHasher[tx] = Poseidon(2);
+        inCommitmentandIdxHasher[tx].inputs[0] <== inCommitmentHasher[tx].out;
+        inCommitmentandIdxHasher[tx].inputs[1] <== inPathIndices[tx];
+
+        // check if input commitments is in the accInnocentCommitmentMerkleTree 
         inTree[tx] = MerkleProof(levels);
-        inTree[tx].leaf <== inputNullifier[tx];
-        inTree[tx].pathIndices <== accInnocentNullifierPathIndex[tx];
+        inTree[tx].leaf <== inCommitmentandIdxHasher[tx].out;
+        inTree[tx].pathIndices <== accInnocentCommitmentPathIndex[tx];
         for (var i = 0; i < levels; i++) {
-            inTree[tx].pathElements[i] <== accInnocentNullifierPathElements[tx][i];
+            inTree[tx].pathElements[i] <== accInnocentCommitmentPathElements[tx][i];
         }
 
         // check merkle proof only if amount is non-zero
         inCheckRoot[tx] = ForceEqualIfEnabled();
-        inCheckRoot[tx].in[0] <== accInnocentNullifiersMerkleRoot;
+        inCheckRoot[tx].in[0] <== accInnocentCommitmentMerkleRoot;
         inCheckRoot[tx].in[1] <== inTree[tx].root;
         inCheckRoot[tx].enabled <== inAmount[tx];
 
@@ -162,53 +181,70 @@ template Transaction(levels, nIns, nOuts, zeroLeaf) {
         // need to be checked either).
     }
 
-
-    // calculate output nulliier
-
-    component outKeypair[nOuts];
     component outSignature[nOuts];
     component outCommitmentHasher[nOuts];
-    component outNullifierHasher[nOuts];
+    // component outNullifierHasher[nOuts];
+    component accInnocentOutputHasher[nOuts];
     component outTree[nOuts];
     component outCheckRoot[nOuts];
-    var sumIns = 0;
+    // var sumIns = 0;
 
-    // verify correctness of transaction inputs
+    // verify correctness of tx outputs and calculate Hash(outCommitment, idx)
     for (var tx = 0; tx < nOuts; tx++) {
-        outKeypair[tx] = Keypair();
-        outKeypair[tx].privateKey <== outPrivateKey[tx];
+        // outKeypair[tx] = Keypair();
+        // outKeypair[tx].privateKey <== outPrivateKey[tx];
 
         outCommitmentHasher[tx] = Poseidon(3);
         outCommitmentHasher[tx].inputs[0] <== outAmount[tx];
-        outCommitmentHasher[tx].inputs[1] <== outKeypair[tx].publicKey;
+        // outCommitmentHasher[tx].inputs[1] <== outKeypair[tx].publicKey
+        outCommitmentHasher[tx].inputs[1] <== outPubkey[tx];
         outCommitmentHasher[tx].inputs[2] <== outBlinding[tx];
 
-        outSignature[tx] = Signature();
-        outSignature[tx].privateKey <== outPrivateKey[tx];
-        outSignature[tx].commitment <== outCommitmentHasher[tx].out;
-        outSignature[tx].merklePath <== outputsStartIndex + tx;
+        outCommitmentHasher[tx].out === outputCommitment[tx];
 
-        outNullifierHasher[tx] = Poseidon(3);
-        outNullifierHasher[tx].inputs[0] <== outCommitmentHasher[tx].out;
-        outNullifierHasher[tx].inputs[1] <== outputsStartIndex + tx;
-        outNullifierHasher[tx].inputs[2] <== outSignature[tx].out;
+        // outSignature[tx] = Signature();
+        // outSignature[tx].privateKey <== outPrivateKey[tx];
+        // outSignature[tx].commitment <== outCommitmentHasher[tx].out;
+        // outSignature[tx].merklePath <== outPathIndices[tx];
+
+        // outNullifierHasher[tx] = Poseidon(3);
+        // outNullifierHasher[tx].inputs[0] <== outCommitmentHasher[tx].out;
+        // outNullifierHasher[tx].inputs[1] <== outputsStartIndex + tx;
+        // outNullifierHasher[tx].inputs[2] <== outSignature[tx].out;
+
+        accInnocentOutputHasher[tx] = Poseidon(2);
+        accInnocentOutputHasher[tx].inputs[0] <== outputCommitment[tx];
+        accInnocentOutputHasher[tx].inputs[1] <== outputsStartIndex + tx;
+
+
     }
 
+    // accumulate innocent output commitments with idx
     component treeUpdater = MerkleTreeUpdater(levels, 1, zeroLeaf);
-    treeUpdater.oldRoot <== accInnocentNullifiersMerkleRoot;
+    treeUpdater.oldRoot <== accInnocentCommitmentMerkleRoot;
 
-    // update merkle tree with output nullifiers
+    // update merkle tree with output commitments
+    // for (var tx = 0; tx < nOuts; tx++) {
+    //     treeUpdater.leaves[tx] <== outNullifierHasher[tx].out;
+    // }
     for (var tx = 0; tx < nOuts; tx++) {
-        treeUpdater.leaves[tx] <== outNullifierHasher[tx].out;
+        treeUpdater.leaves[tx] <== accInnocentOutputHasher[tx].out;
     }
 
-    treeUpdater.pathIndices <== accInnocentOutputPathIndex; // TODO: check if this is correct
+    // at every step, index must be increased by 2
+    treeUpdater.pathIndices <== accInnocentOutputPathIndex; // TODO IN CREATING INPUTS: check if this is correct
     for (var i = 0; i < levels - 1; i++) {
-        treeUpdater.pathElements[i] <== accInnocentOutputPathElements[i]; // TODO: check if this is correct
+        treeUpdater.pathElements[i] <== accInnocentOutputPathElements[i]; // TODO IN CREATING INPUTS: check if this is correct
     }
 
-    newAccInnocentNullifiersMerkleRoot <== treeUpdater.newRoot;
 
+    component stepHasher = Poseidon(3);
+    stepHasher.inputs[0] <== txRecordsMerkleRoot;
+    stepHasher.inputs[1] <== allowedTxRecordsMerkleRoot;
+    stepHasher.inputs[2] <== treeUpdater.newRoot;
+    
+    step_out <== stepHasher.out + isLastStep * (txRecordHasher.out - stepHasher.out);
+    // step_out <== stepHasher.out;
 
 }
 
