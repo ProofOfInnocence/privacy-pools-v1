@@ -152,4 +152,4 @@ async function proveInclusion({ provider, tornadoPool, keypair, allowlist, txHas
   console.log(steps)
 }
 
-module.exports = { proveInclusion }
+module.exports = { proveInclusion, getPoiSteps, buildTxRecordMerkleTree, getTxRecord }

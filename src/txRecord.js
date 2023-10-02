@@ -34,7 +34,7 @@ class TxRecord {
     ])
   }
 
-  static generateInputs({
+  generateInputs({
     txRecordsMerkleTree,
     allowedTxRecordsMerkleTree,
     accInnocentCommitmentsMerkleTree,
@@ -42,6 +42,11 @@ class TxRecord {
     stepCount,
   }) {
     const txRecord = toFixedHex(this.hash())
+    if (this.index == 0) {
+      return
+    }
+    console.log('txRecord: ', txRecord)
+    console.log('txRecordsMerkleTree: ', txRecordsMerkleTree)
     const txRecordsPathIndex = txRecordsMerkleTree.indexOf(txRecord)
     const txRecordsPathElements = txRecordsMerkleTree.path(this.index).pathElements
 
@@ -57,10 +62,10 @@ class TxRecord {
     var allowedTxRecordsPathElements = null
 
     if (this.publicAmount > 0) {
-      allowedTxRecordsPathIndex = allowedTxRecordsMerkleTree.indexOf(txRecord)
+      allowedTxRecordsPathIndex = allowedTxRecordsMerkleTree.indxexOf(txRecord)
       allowedTxRecordsPathElements = allowedTxRecordsMerkleTree.path(this.index).pathElements
     } else {
-      return Error('publicAmount must be greater than 0')
+      return
     }
 
     var inPrivateKey = []
@@ -104,6 +109,9 @@ class TxRecord {
       accInnocentCommitmentsMerkleTree.root(),
     )
     const step_out = step_outHasher + isLastStep * (this.hash() - step_outHasher)
+
+    console.log('####################')
+    console.log(txRecordsPathElements, 2 * stepCount, inPrivateKey, outputCommitment)
 
     return {
       txRecordsPathElements: txRecordsPathElements,

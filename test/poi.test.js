@@ -9,8 +9,9 @@ const { transaction, registerAndTransact, prepareTransaction, buildMerkleTree } 
 const { toFixedHex, poseidonHash } = require('../src/utils')
 const { Keypair } = require('../src/keypair')
 
-const { getUtxos, deposit, withdraw, balance } = require('../src/cli')
-const { proveInclusion } = require('../src/poi')
+const { getUtxos, deposit, withdraw, balance, getTxRecordEvents } = require('../src/cli')
+const { proveInclusion, getPoiSteps, buildTxRecordMerkleTree, getTxRecord } = require('../src/poi')
+require('../src/txRecord')
 
 const MERKLE_TREE_HEIGHT = 5
 const l1ChainId = 1
@@ -93,5 +94,82 @@ describe('ProofOfInnocence', function () {
       keypair: aliceKeypair,
       txHash: result.transactionHash,
     })
+  })
+
+  it('should generate inputs for the steps of poi', async function () {
+    const { tornadoPool } = await loadFixture(fixture)
+    const aliceDepositAmount1 = utils.parseEther('0.03')
+    const aliceDepositAmount2 = utils.parseEther('0.04')
+    const aliceWithdrawAmount = utils.parseEther('0.05')
+    const bobEthAddress = '0xDeaD00000000000000000000000000000000BEEf'
+
+    const aliceKeypair = new Keypair() // contains private and public keys
+
+    await deposit({
+      provider: ethers.provider,
+      tornadoPool,
+      keypair: aliceKeypair,
+      amount: aliceDepositAmount1,
+    })
+    expect(await balance({ provider: ethers.provider, tornadoPool, keypair: aliceKeypair })).to.be.equal(
+      aliceDepositAmount1,
+    )
+    await deposit({
+      provider: ethers.provider,
+      tornadoPool,
+      keypair: aliceKeypair,
+      amount: aliceDepositAmount2,
+    })
+    expect(await balance({ provider: ethers.provider, tornadoPool, keypair: aliceKeypair })).to.be.equal(
+      aliceDepositAmount1.add(aliceDepositAmount2),
+    )
+    const result = await withdraw({
+      provider: ethers.provider,
+      tornadoPool,
+      keypair: aliceKeypair,
+      amount: aliceWithdrawAmount,
+      recipient: bobEthAddress,
+    })
+    expect(await balance({ provider: ethers.provider, tornadoPool, keypair: aliceKeypair })).to.be.equal(
+      aliceDepositAmount1.add(aliceDepositAmount2).sub(aliceWithdrawAmount),
+    )
+    // console.log(result)
+    await proveInclusion({
+      provider: ethers.provider,
+      tornadoPool,
+      keypair: aliceKeypair,
+      txHash: result.transactionHash,
+    })
+    const event = await getTxRecord({
+      provider: ethers.provider,
+      tornadoPool,
+      txHash: result.transactionHash,
+    })
+
+    const { steps, txRecordEvents } = await getPoiSteps({
+      provider: ethers.provider,
+      tornadoPool,
+      keypair: aliceKeypair,
+      txRecordEvent: event,
+    })
+    console.log('txRecordEvents: ', txRecordEvents)
+    const txRecordMerkleTree = buildTxRecordMerkleTree({ events: txRecordEvents })
+    console.log('txRecordMerkleTree:', txRecordMerkleTree)
+    const allowedTxRecordsMerkleTree = buildTxRecordMerkleTree({ events: txRecordEvents })
+    const accInnocentCommitmentsMerkleTree = buildMerkleTree({
+      height: MERKLE_TREE_HEIGHT,
+      leaves: [],
+    })
+
+    for (const step of steps) {
+      console.log('for each step: ', step)
+      step.generateInputs(
+        txRecordMerkleTree,
+        allowedTxRecordsMerkleTree,
+        accInnocentCommitmentsMerkleTree,
+        false,
+        0,
+      )
+    }
   })
 })
