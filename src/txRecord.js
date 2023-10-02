@@ -1,4 +1,4 @@
-const { poseidonHash } = require('./utils')
+const { poseidonHash, toFixedHex } = require('./utils')
 
 class TxRecord {
   constructor({ inputs = [], outputs = [], publicAmount = 0, index = 0 }) {
@@ -38,8 +38,47 @@ class TxRecord {
     txRecordsMerkleTree,
     allowedTxRecordsMerkleTree,
     accInnocentNullifiersMerkleTree,
+    isLastStep = false
   }) {
+    const txRecord = toFixedHex(this.hash());
+    const txRecordsPathIndex = txRecordsMerkleTree.indexOf(txRecord);
+    const txRecordsPathElements = txRecordsMerkleTree.path(this.index).pathElements;
+
+    const allowedTxRecordsPathIndex = allowedTxRecordsMerkleTree.indexOf(txRecord);
+    const allowedTxRecordsPathElements = allowedTxRecordsMerkleTree.path(this.index).pathElements;
+    isLastStep = isLastStep ? 1 : 0;
     
+
+    return {
+      txRecordsPathElements: null,
+      txRecordsPathIndex: null,
+      allowedTxRecordsPathElements: null,
+      allowedTxRecordsPathIndex: null,
+      accInnocentNullifiersPathElements: null,
+      accInnocentNullifiersPathIndex: null,
+      isLastStep: null,
+      txRecordsMerkleRoot: null,
+      allowedTxRecordsMerkleRoot: null,
+      accInnocentNullifiersMerkleRoot: null,
+      step_in: null,
+      step_out: null,
+      accInnocentOutputPathElements: null,
+      accInnocentOutputPathIndex: null,
+      extAmount: null,
+      publicAmount: null,
+      outputsStartIndex: null,
+      inputNullifier: null,
+      inAmount: null,
+      inPrivateKey: null,
+      inBlinding: null,
+      inPathIndices: null,
+      inPathElements: null,
+      outputCommitment: null,
+      outAmount: null,
+      outPubkey: null,
+      outBlinding: null,
+      outPathIndices: null,
+    }
   }
 }
 
