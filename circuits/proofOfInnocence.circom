@@ -65,7 +65,7 @@ template Transaction(levels, nIns, nOuts, zeroLeaf) {
     // step_out = Hash(txRecordsMerkleRoot, allowedTxRecordsMerkleRoot, newAccInnocentCommitmentMerkleRoot)
     signal output step_out;
     // info belongs to outputCommitments helping writing them in accInnocentCommitmentMT
-    signal private input accInnocentOutputPathElements[levels];
+    signal private input accInnocentOutputPathElements[levels - 1];
     signal private input accInnocentOutputPathIndex;
     // extAmount = external amount used for deposits and withdrawals
     // correct extAmount range is enforced on the smart contract
@@ -88,7 +88,7 @@ template Transaction(levels, nIns, nOuts, zeroLeaf) {
     signal private input outPubkey[nOuts];
     signal private input outBlinding[nOuts];
     // signal private input outPrivateKey[nOuts];
-    signal private input outPathIndices[nOuts];
+    // signal private input outPathIndices[nOuts];
 
 
 
