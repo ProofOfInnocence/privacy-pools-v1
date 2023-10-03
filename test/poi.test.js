@@ -154,17 +154,20 @@ describe('ProofOfInnocence', function () {
       keypair: aliceKeypair,
       txRecordEvent: event,
     })
-    console.log('txRecordEvents: ', txRecordEvents)
+    // console.log('txRecordEvents: ', txRecordEvents)
     const txRecordsMerkleTree = buildTxRecordMerkleTree({ events: txRecordEvents })
-    console.log('txRecordMerkleTree:', txRecordsMerkleTree)
+    // console.log('txRecordMerkleTree:', txRecordsMerkleTree)
     const allowedTxRecordsMerkleTree = buildTxRecordMerkleTree({ events: txRecordEvents })
-    var accInnocentCommitmentsMerkleTree = new MerkleTree(MERKLE_TREE_HEIGHT, [], {
+    let accInnocentCommitmentsMerkleTree = new MerkleTree(MERKLE_TREE_HEIGHT, [], {
       hashFunction: poseidonHash2,
     })
 
+    // console.log('====accInnocentCommitmentsMT: ', accInnocentCommitmentsMerkleTree)
+    console.log('----steps: ', steps)
+    console.log('====steps length: ', steps.length)
     for (const step of steps) {
-      console.log('for each step: ', step)
-      console.log('step.hash(): ', step.hash())
+      // console.log('for each step: ', step)
+      // console.log('step.hash(): ', step.hash())
       step.generateInputs({
         txRecordsMerkleTree,
         allowedTxRecordsMerkleTree: allowedTxRecordsMerkleTree,

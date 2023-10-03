@@ -80,7 +80,7 @@ template Transaction(levels, nIns, nOuts, zeroLeaf) {
     signal private input inPrivateKey[nIns];
     signal private input inBlinding[nIns];
     signal private input inPathIndices[nIns];
-    signal private input inPathElements[nIns][levels];
+    // signal private input inPathElements[nIns][levels];
 
     // data for transaction outputs
     signal private input outputCommitment[nOuts];

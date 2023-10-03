@@ -72,7 +72,7 @@ class TxRecord {
     var inAmount = []
     var inBlinding = []
     var inPathIndices = []
-    var inPathElements = []
+    // var inPathElements = []
     var outputCommitment = []
     var outAmount = []
     var outPubkey = []
@@ -84,30 +84,36 @@ class TxRecord {
       inputNullifier.push(this.inputs[i].getNullifier())
       inAmount.push(this.inputs[i].amount)
       inBlinding.push(this.inputs[i].blinding)
-      // inPathIndices.push(this.inputs[i].getPathIndex())
-      // inPathElements.push(this.inputs[i].getPathElements())
+      inPathIndices.push(this.inputs[i].index)
+      // inPathElements.push(txRecordsMerkleTree.path(this.))
     }
 
     var outCommitmentsHashWithIndex = []
-
-    for (var j = 0; j < this.outputs.length; i++) {
+    console.log('----length: ', this.outputs.length)
+    for (var j = 0; j < this.outputs.length; j++) {
       outputCommitment.push(this.outputs[j].getCommitment())
       outAmount.push(this.outputs[j].amount)
-      outPubkey.push(this.outputs[j].getPubkey())
-      outBlinding.push(this.outputs[j].getBlinding())
-      outCommitmentsHashWithIndex.push(poseidonHash([this.outputs[j].getCommitment(), this.index + i]))
+      outPubkey.push(this.outputs[j].keypair.privkey)
+      outBlinding.push(this.outputs[j].blinding)
+      outCommitmentsHashWithIndex.push(poseidonHash([this.outputs[j].getCommitment(), this.index + j]))
+      // console.log('====accInnocentComMT before: ', accInnocentCommitmentsMerkleTree)
+      // console.log('pushing outCommitmentsHashWithIndex: ', outCommitmentsHashWithIndex[j])
+      console.log('----outCommitmentsList', outCommitmentsHashWithIndex)
       accInnocentCommitmentsMerkleTree.insert(outCommitmentsHashWithIndex[j])
+      // console.log('====accInnocentComMT after: ', accInnocentCommitmentsMerkleTree)
     }
+
+    console.log('----outCommitmentsList', outCommitmentsHashWithIndex)
 
     const accInnocentOutputPathElements = accInnocentCommitmentsMerkleTree
       .path(2 * stepCount)
       .pathElements.slice(0, -1) // may be .slice(1)
 
-    const step_outHasher = poseidonHash(
+    const step_outHasher = poseidonHash([
       txRecordsMerkleTree.root(),
       allowedTxRecordsMerkleTree.root(),
       accInnocentCommitmentsMerkleTree.root(),
-    )
+    ])
     const step_out = step_outHasher + isLastStep * (this.hash() - step_outHasher)
 
     console.log('####################')
@@ -136,7 +142,7 @@ class TxRecord {
       inPrivateKey: inPrivateKey,
       inBlinding: inBlinding,
       inPathIndices: inPathIndices,
-      inPathElements: inPathElements,
+      // inPathElements: inPathElements,
       outputCommitment: outputCommitment,
       outAmount: outAmount,
       outPubkey: outPubkey,

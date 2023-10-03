@@ -78,7 +78,7 @@ async function getPoiSteps({ provider, tornadoPool, keypair, txRecordEvent }) {
         commitmentToUtxo.get(toFixedHex(event.args.outputCommitment2)),
       ],
       publicAmount: event.args.publicAmount,
-      index: event.args.index,
+      index: event.args.index / 2,
     })
     txRecords.push(txRecord)
   }
@@ -93,7 +93,7 @@ async function getPoiSteps({ provider, tornadoPool, keypair, txRecordEvent }) {
       commitmentToUtxo.get(toFixedHex(txRecordEvent.args.outputCommitment2)),
     ],
     publicAmount: txRecordEvent.args.publicAmount,
-    index: txRecordEvent.args.index,
+    index: txRecordEvent.args.index / 2,
   })
 
   let steps = [txRecord]
