@@ -153,10 +153,10 @@ describe('ProofOfInnocence', function () {
       txRecordEvent: event,
     })
     console.log('txRecordEvents: ', txRecordEvents)
-    const txRecordMerkleTree = buildTxRecordMerkleTree({ events: txRecordEvents })
-    console.log('txRecordMerkleTree:', txRecordMerkleTree)
+    const txRecordsMerkleTree = buildTxRecordMerkleTree({ events: txRecordEvents })
+    console.log('txRecordMerkleTree:', txRecordsMerkleTree)
     const allowedTxRecordsMerkleTree = buildTxRecordMerkleTree({ events: txRecordEvents })
-    const accInnocentCommitmentsMerkleTree = buildMerkleTree({
+    var accInnocentCommitmentsMerkleTree = buildMerkleTree({
       height: MERKLE_TREE_HEIGHT,
       leaves: [],
     })
@@ -164,7 +164,7 @@ describe('ProofOfInnocence', function () {
     for (const step of steps) {
       console.log('for each step: ', step)
       step.generateInputs(
-        txRecordMerkleTree,
+        txRecordsMerkleTree,
         allowedTxRecordsMerkleTree,
         accInnocentCommitmentsMerkleTree,
         false,

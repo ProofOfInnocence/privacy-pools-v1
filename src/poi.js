@@ -129,6 +129,7 @@ async function getPoiSteps({ provider, tornadoPool, keypair, txRecordEvent }) {
   if (todoProve.size > 0) {
     throw new Error('Not enough proofs')
   }
+  console.log('txRecords to prove: ', txRecordEvents)
   return { steps: steps.reverse(), txRecordEvents }
 }
 
@@ -136,6 +137,7 @@ function buildTxRecordMerkleTree({ events }) {
   const leaves = events
     .sort((a, b) => a.args.index - b.args.index)
     .map((e) => toFixedHex(TxRecord.hashFromEvent(e)))
+  // console.log('leaves: ', leaves)
   return new MerkleTree(MERKLE_TREE_HEIGHT, leaves, { hashFunction: poseidonHash2 })
 }
 
