@@ -137,8 +137,8 @@ class TxRecord {
     return {
       txRecordsPathElements: txRecordsPathElements,
       txRecordsPathIndex: txRecordsPathIndex,
-      allowedTxRecordsPathElements: allowedTxRecordsPathIndex,
-      allowedTxRecordsPathIndex: allowedTxRecordsPathElements,
+      allowedTxRecordsPathElements: allowedTxRecordsPathElements,
+      allowedTxRecordsPathIndex: allowedTxRecordsPathIndex,
       accInnocentCommitmentsPathElements: accInnocentCommitmentsPathElements,
       accInnocentCommitmentsPathIndex: accInnocentCommitmentsPathIndex,
       isLastStep: isLastStep,

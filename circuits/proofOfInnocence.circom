@@ -29,27 +29,27 @@ template IsNum2Bits(n) {
 template ProofOfInnocence(levels, nIns, nOuts, zeroLeaf) {
 
     // First MT: txRecordMT created by events
-    signal private input txRecordPathElements[levels];
-    signal private input txRecordPathIndex;
+    signal private input txRecordsPathElements[levels];
+    signal private input txRecordsPathIndex;
     // Second MT: allowedTxRecordMT given by the authorities
-    signal private input allowedTxRecordPathElements[levels];
-    signal private input allowedTxRecordPathIndex;
+    signal private input allowedTxRecordsPathElements[levels];
+    signal private input allowedTxRecordsPathIndex;
     // Third MT: accInnocentCommitmentMT created by the user
-    signal private input accInnocentCommitmentPathElements[nIns][levels];
-    signal private input accInnocentCommitmentPathIndex[nIns];
+    signal private input accInnocentCommitmentsPathElements[nIns][levels];
+    signal private input accInnocentCommitmentsPathIndex[nIns];
     //checks if last step is reached
-    // signal private input isLastStep;
+    signal private input isLastStep;
 
     signal private input txRecordsMerkleRoot;
     signal private input allowedTxRecordsMerkleRoot;
-    signal private input accInnocentCommitmentMerkleRoot;
+    signal private input accInnocentCommitmentsMerkleRoot;
     // step_in = Hash(txRecordsMerkleRoot, allowedTxRecordsMerkleRoot, accInnocentCommitmentMerkleRoot)
     signal input step_in;
     // step_out_0 = txRecordsMerkleRoot
     // step_out_1 = allowedTxRecordsMerkleRoot
     // step_out_2 = newAccInnocentCommitmentMerkleRoot
     // step_out = Hash(txRecordsMerkleRoot, allowedTxRecordsMerkleRoot, newAccInnocentCommitmentMerkleRoot)
-    signal output step_out;
+    // signal output step_out;
     // info belongs to outputCommitments helping writing them in accInnocentCommitmentMT
     signal private input accInnocentOutputPathElements[levels - 1];
     signal private input accInnocentOutputPathIndex;
@@ -91,17 +91,17 @@ template ProofOfInnocence(levels, nIns, nOuts, zeroLeaf) {
     // 2 - calculate txRecord merkle path
     component txRecordTree = MerkleProof(levels);
     txRecordTree.leaf <== txRecordHasher.out;
-    txRecordTree.pathIndices <== txRecordPathIndex;
+    txRecordTree.pathIndices <== txRecordsPathIndex;
     for (var i = 0; i < levels; i++) {
-        txRecordTree.pathElements[i] <== txRecordPathElements[i];
+        txRecordTree.pathElements[i] <== txRecordsPathElements[i];
     }
- txRecordsMerkleRoot === txRecordTree.root;
+    txRecordsMerkleRoot === txRecordTree.root;
     // 3 - if publicAmount is positive (deposit), check if it is in allowlist  SUBJECT TO CHANGE
     component allowedTxRecordTree = MerkleProof(levels);
     allowedTxRecordTree.leaf <== txRecordHasher.out;
-    allowedTxRecordTree.pathIndices <== allowedTxRecordPathIndex;
+    allowedTxRecordTree.pathIndices <== allowedTxRecordsPathIndex;
     for (var i = 0; i < levels; i++) {
-        allowedTxRecordTree.pathElements[i] <== allowedTxRecordPathElements[i];
+        allowedTxRecordTree.pathElements[i] <== allowedTxRecordsPathElements[i];
     }
     component checkAllowlistRoot = ForceEqualIfEnabled();
     checkAllowlistRoot.in[0] <== allowedTxRecordsMerkleRoot;
@@ -148,14 +148,14 @@ template ProofOfInnocence(levels, nIns, nOuts, zeroLeaf) {
         // check if input commitments is in the accInnocentCommitmentMerkleTree 
         inTree[tx] = MerkleProof(levels);
         inTree[tx].leaf <== inCommitmentandIdxHasher[tx].out;
-        inTree[tx].pathIndices <== accInnocentCommitmentPathIndex[tx];
+        inTree[tx].pathIndices <== accInnocentCommitmentsPathIndex[tx];
         for (var i = 0; i < levels; i++) {
-            inTree[tx].pathElements[i] <== accInnocentCommitmentPathElements[tx][i];
+            inTree[tx].pathElements[i] <== accInnocentCommitmentsPathElements[tx][i];
         }
 
         // check merkle proof only if amount is non-zero
         inCheckRoot[tx] = ForceEqualIfEnabled();
-        inCheckRoot[tx].in[0] <== accInnocentCommitmentMerkleRoot;
+        inCheckRoot[tx].in[0] <== accInnocentCommitmentsMerkleRoot;
         inCheckRoot[tx].in[1] <== inTree[tx].root;
         inCheckRoot[tx].enabled <== inAmount[tx];
 
@@ -181,7 +181,7 @@ template ProofOfInnocence(levels, nIns, nOuts, zeroLeaf) {
 
     // accumulate innocent output commitments with idx
     component treeUpdater = MerkleTreeUpdater(levels, 1, zeroLeaf);
-    treeUpdater.oldRoot <== accInnocentCommitmentMerkleRoot;
+    treeUpdater.oldRoot <== accInnocentCommitmentsMerkleRoot;
     for (var tx = 0; tx < nOuts; tx++) {
         treeUpdater.leaves[tx] <== accInnocentOutputHasher[tx].out;
     }

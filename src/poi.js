@@ -163,9 +163,10 @@ async function proveInclusion({ provider, tornadoPool, keypair, allowlist, txHas
       stepCount: 0,
     })
     console.log(step)
-    const inputs_str = JSON.stringify(stepInputs, null, 2)
-    console.log('step inputs: ', inputs_str)
-    return inputs_str
+    // const inputs_str = JSON.stringify(stepInputs, null, 2)
+    // console.log('step inputs: ', inputs_str)
+    // return inputs_str
+    return stepInputs
   }
 }
 
