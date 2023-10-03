@@ -42,13 +42,8 @@ class TxRecord {
     stepCount,
   }) {
     const txRecord = toFixedHex(this.hash())
-    if (this.index == 0) {
-      return
-    }
-    // console.log('txRecord: ', txRecord)
-    // console.log('txRecordsMerkleTree: ', txRecordsMerkleTree)
     const txRecordsPathIndex = txRecordsMerkleTree.indexOf(txRecord)
-    const txRecordsPathElements = txRecordsMerkleTree.path(this.index).pathElements
+    const txRecordsPathElements = txRecordsMerkleTree.path(txRecordsPathIndex).pathElements
 
     isLastStep = isLastStep ? 1 : 0
     const step_in = poseidonHash([
@@ -60,11 +55,15 @@ class TxRecord {
     var allowedTxRecordsPathIndex = null
     var allowedTxRecordsPathElements = null
 
-    if (this.publicAmount > 0) {
+    if (BigInt(this.publicAmount) < BigInt(2) ** BigInt(240)) {
       allowedTxRecordsPathIndex = allowedTxRecordsMerkleTree.indexOf(txRecord)
-      allowedTxRecordsPathElements = allowedTxRecordsMerkleTree.path(this.index).pathElements
+      if (allowedTxRecordsPathIndex == -1) {
+        throw new Error('txRecord not found in allowedTxRecordsMerkleTree')
+      }
+      allowedTxRecordsPathElements = allowedTxRecordsMerkleTree.path(allowedTxRecordsPathIndex).pathElements
     } else {
-      return
+      allowedTxRecordsPathIndex = 0
+      allowedTxRecordsPathElements = new Array(allowedTxRecordsMerkleTree.levels).fill(0)
     }
 
     var inPrivateKey = []
@@ -72,20 +71,34 @@ class TxRecord {
     var inAmount = []
     var inBlinding = []
     var inPathIndices = []
-    // var inPathElements = []
     var outputCommitment = []
     var outAmount = []
     var outPubkey = []
     var outBlinding = []
+    var accInnocentCommitmentsPathElements = []
+    var accInnocentCommitmentsPathIndex = []
 
     for (var i = 0; i < this.inputs.length; i++) {
-      console.log(inPrivateKey, this.inputs[i].keypair.privkey)
       inPrivateKey.push(this.inputs[i].keypair.privkey)
       inputNullifier.push(this.inputs[i].getNullifier())
       inAmount.push(this.inputs[i].amount)
       inBlinding.push(this.inputs[i].blinding)
       inPathIndices.push(this.inputs[i].index)
-      // inPathElements.push(txRecordsMerkleTree.path(this.))
+      if (this.inputs[i].amount > 0) {
+        const curBlindedCommitment = poseidonHash([this.inputs[i].getCommitment(), this.inputs[i].index])
+
+        const curAccInnocentIndex = accInnocentCommitmentsMerkleTree.indexOf(curBlindedCommitment)
+        if (curAccInnocentIndex == -1) {
+          throw new Error('Blinded commitment not found in accInnocentCommitmentsMerkleTree')
+        }
+        accInnocentCommitmentsPathIndex.push(curAccInnocentIndex)
+        accInnocentCommitmentsPathElements.push(
+          accInnocentCommitmentsMerkleTree.path(curAccInnocentIndex).pathElements,
+        )
+      } else {
+        accInnocentCommitmentsPathIndex.push(0)
+        accInnocentCommitmentsPathElements.push(new Array(accInnocentCommitmentsMerkleTree.levels).fill(0))
+      }
     }
 
     var outCommitmentsHashWithIndex = []
@@ -95,26 +108,28 @@ class TxRecord {
       outAmount.push(this.outputs[j].amount)
       outPubkey.push(this.outputs[j].keypair.privkey)
       outBlinding.push(this.outputs[j].blinding)
-      outCommitmentsHashWithIndex.push(poseidonHash([this.outputs[j].getCommitment(), this.index + j]))
+      // outCommitmentsHashWithIndex.push(poseidonHash([this.outputs[j].getCommitment(), this.index + j]))
       // console.log('====accInnocentComMT before: ', accInnocentCommitmentsMerkleTree)
       // console.log('pushing outCommitmentsHashWithIndex: ', outCommitmentsHashWithIndex[j])
       // console.log('----outCommitmentsList', outCommitmentsHashWithIndex)
-      accInnocentCommitmentsMerkleTree.insert(outCommitmentsHashWithIndex[j])
+      // accInnocentCommitmentsMerkleTree.insert(outCommitmentsHashWithIndex[j])
       // console.log('====accInnocentComMT after: ', accInnocentCommitmentsMerkleTree)
     }
 
     // console.log('----outCommitmentsList', outCommitmentsHashWithIndex)
-
+    const accInnocentCommitmentsMerkleRoot = accInnocentCommitmentsMerkleTree.root()
+    accInnocentCommitmentsMerkleTree.insert('0x00')
+    const accInnocentOutputPathIndex = accInnocentCommitmentsMerkleTree.elements().length - 1
     const accInnocentOutputPathElements = accInnocentCommitmentsMerkleTree
-      .path(2 * stepCount)
-      .pathElements.slice(0, -1) // may be .slice(1)
+      .path(accInnocentOutputPathIndex)
+      .pathElements.slice(1) // may be .slice(1)
 
-    const step_outHasher = poseidonHash([
-      txRecordsMerkleTree.root(),
-      allowedTxRecordsMerkleTree.root(),
-      accInnocentCommitmentsMerkleTree.root(),
-    ])
-    const step_out = step_outHasher + isLastStep * (this.hash() - step_outHasher)
+    // const step_outHasher = poseidonHash([
+    //   txRecordsMerkleTree.root(),
+    //   allowedTxRecordsMerkleTree.root(),
+    //   accInnocentCommitmentsMerkleTree.root(),
+    // ])
+    // const step_out = step_outHasher + isLastStep * (this.hash() - step_outHasher)
 
     console.log('####################')
     console.log('some info: ', txRecordsPathElements, 2 * stepCount, inPrivateKey, outputCommitment)
@@ -124,17 +139,15 @@ class TxRecord {
       txRecordsPathIndex: txRecordsPathIndex,
       allowedTxRecordsPathElements: allowedTxRecordsPathIndex,
       allowedTxRecordsPathIndex: allowedTxRecordsPathElements,
-      // accInnocentCommitmentsPathElements: accInnocentCommitmentsPathElements,
-      // accInnocentCommitmentsPathIndex: accInnocentCommitmentsPathIndex,
+      accInnocentCommitmentsPathElements: accInnocentCommitmentsPathElements,
+      accInnocentCommitmentsPathIndex: accInnocentCommitmentsPathIndex,
       isLastStep: isLastStep,
       txRecordsMerkleRoot: txRecordsMerkleTree.root(),
       allowedTxRecordsMerkleRoot: allowedTxRecordsMerkleTree.root(),
-      accInnocentCommitmentsMerkleRoot: accInnocentCommitmentsMerkleTree.root(),
+      accInnocentCommitmentsMerkleRoot: accInnocentCommitmentsMerkleRoot,
       step_in: step_in,
-      step_out: step_out,
       accInnocentOutputPathElements: accInnocentOutputPathElements,
-      accInnocentOutputPathIndex: 2 * stepCount,
-      // extAmount: null,
+      accInnocentOutputPathIndex: accInnocentOutputPathIndex,
       publicAmount: this.publicAmount,
       outputsStartIndex: this.index,
       inputNullifier: inputNullifier,
@@ -142,12 +155,10 @@ class TxRecord {
       inPrivateKey: inPrivateKey,
       inBlinding: inBlinding,
       inPathIndices: inPathIndices,
-      // inPathElements: inPathElements,
       outputCommitment: outputCommitment,
       outAmount: outAmount,
       outPubkey: outPubkey,
       outBlinding: outBlinding,
-      // outPathIndices: null,
     }
   }
 }

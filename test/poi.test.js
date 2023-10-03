@@ -10,7 +10,6 @@ const { toFixedHex, poseidonHash, poseidonHash2 } = require('../src/utils')
 const { Keypair } = require('../src/keypair')
 const MerkleTree = require('fixed-merkle-tree')
 
-
 const { getUtxos, deposit, withdraw, balance, getTxRecordEvents } = require('../src/cli')
 const { proveInclusion, getPoiSteps, buildTxRecordMerkleTree, getTxRecord } = require('../src/poi')
 require('../src/txRecord')
@@ -169,18 +168,20 @@ describe('ProofOfInnocence', function () {
     for (const step of steps) {
       // console.log('for each step: ', step)
       // console.log('step.hash(): ', step.hash())
-      ins.push(
-        step.generateInputs({
-          txRecordsMerkleTree,
-          allowedTxRecordsMerkleTree: allowedTxRecordsMerkleTree,
-          accInnocentCommitmentsMerkleTree: accInnocentCommitmentsMerkleTree,
-          isLastStep: false,
-          stepCount: 0,
-        }),
-      )
+      const stepInputs = step.generateInputs({
+        txRecordsMerkleTree,
+        allowedTxRecordsMerkleTree: allowedTxRecordsMerkleTree,
+        accInnocentCommitmentsMerkleTree: accInnocentCommitmentsMerkleTree,
+        isLastStep: false,
+        stepCount: 0,
+      })
+      // ins.push(stepInputs)
+      console.log(step)
+      console.log('step inputs: ', JSON.stringify(stepInputs, null, 2))
+      break
       // console.log(ins)
     }
-    console.log('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
-    console.log('step inputs: ', ins)
+    // console.log('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
+    // console.log('step inputs: ', JSON.stringify(ins, null, 2))
   })
 })
