@@ -6,8 +6,10 @@ const { utils } = ethers
 
 const Utxo = require('../src/utxo')
 const { transaction, registerAndTransact, prepareTransaction, buildMerkleTree } = require('../src/index')
-const { toFixedHex, poseidonHash } = require('../src/utils')
+const { toFixedHex, poseidonHash, poseidonHash2 } = require('../src/utils')
 const { Keypair } = require('../src/keypair')
+const MerkleTree = require('fixed-merkle-tree')
+
 
 const { getUtxos, deposit, withdraw, balance, getTxRecordEvents } = require('../src/cli')
 const { proveInclusion, getPoiSteps, buildTxRecordMerkleTree, getTxRecord } = require('../src/poi')
@@ -156,20 +158,20 @@ describe('ProofOfInnocence', function () {
     const txRecordsMerkleTree = buildTxRecordMerkleTree({ events: txRecordEvents })
     console.log('txRecordMerkleTree:', txRecordsMerkleTree)
     const allowedTxRecordsMerkleTree = buildTxRecordMerkleTree({ events: txRecordEvents })
-    var accInnocentCommitmentsMerkleTree = buildMerkleTree({
-      height: MERKLE_TREE_HEIGHT,
-      leaves: [],
+    var accInnocentCommitmentsMerkleTree = new MerkleTree(MERKLE_TREE_HEIGHT, [], {
+      hashFunction: poseidonHash2,
     })
 
     for (const step of steps) {
       console.log('for each step: ', step)
-      step.generateInputs(
+      console.log('step.hash(): ', step.hash())
+      step.generateInputs({
         txRecordsMerkleTree,
-        allowedTxRecordsMerkleTree,
-        accInnocentCommitmentsMerkleTree,
-        false,
-        0,
-      )
+        allowedTxRecordsMerkleTree: allowedTxRecordsMerkleTree,
+        accInnocentCommitmentsMerkleTree: accInnocentCommitmentsMerkleTree,
+        isLastStep: false,
+        stepCount: 0,
+      })
     }
   })
 })

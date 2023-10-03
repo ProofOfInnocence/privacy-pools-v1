@@ -51,18 +51,17 @@ class TxRecord {
     const txRecordsPathElements = txRecordsMerkleTree.path(this.index).pathElements
 
     isLastStep = isLastStep ? 1 : 0
-
-    const step_in = poseidonHash(
+    const step_in = poseidonHash([
       txRecordsMerkleTree.root(),
       allowedTxRecordsMerkleTree.root(),
       accInnocentCommitmentsMerkleTree.root(),
-    )
+    ])
 
     var allowedTxRecordsPathIndex = null
     var allowedTxRecordsPathElements = null
 
     if (this.publicAmount > 0) {
-      allowedTxRecordsPathIndex = allowedTxRecordsMerkleTree.indxexOf(txRecord)
+      allowedTxRecordsPathIndex = allowedTxRecordsMerkleTree.indexOf(txRecord)
       allowedTxRecordsPathElements = allowedTxRecordsMerkleTree.path(this.index).pathElements
     } else {
       return
@@ -80,22 +79,23 @@ class TxRecord {
     var outBlinding = []
 
     for (var i = 0; i < this.inputs.length; i++) {
-      inPrivateKey.append(this.inputs[i].getPrivateKey())
-      inputNullifier.append(this.inputs[i].getNullifier())
-      inAmount.append(this.inputs[i].getAmount())
-      inBlinding.append(this.inputs[i].getBlinding())
-      inPathIndices.append(this.inputs[i].getPathIndex())
-      inPathElements.append(this.inputs[i].getPathElements())
+      console.log(inPrivateKey, this.inputs[i].keypair.privkey)
+      inPrivateKey.push(this.inputs[i].keypair.privkey)
+      inputNullifier.push(this.inputs[i].getNullifier())
+      inAmount.push(this.inputs[i].amount)
+      inBlinding.push(this.inputs[i].blinding)
+      // inPathIndices.push(this.inputs[i].getPathIndex())
+      // inPathElements.push(this.inputs[i].getPathElements())
     }
 
     var outCommitmentsHashWithIndex = []
 
     for (var j = 0; j < this.outputs.length; i++) {
-      outputCommitment.append(this.outputs[j].getCommitment())
-      outAmount.append(this.outputs[j].getAmount())
-      outPubkey.append(this.outputs[j].getPubkey())
-      outBlinding.append(this.outputs[j].getBlinding())
-      outCommitmentsHashWithIndex.append(poseidonHash(this.outputs[j].getCommitment(), this.index + i))
+      outputCommitment.push(this.outputs[j].getCommitment())
+      outAmount.push(this.outputs[j].amount)
+      outPubkey.push(this.outputs[j].getPubkey())
+      outBlinding.push(this.outputs[j].getBlinding())
+      outCommitmentsHashWithIndex.push(poseidonHash([this.outputs[j].getCommitment(), this.index + i]))
       accInnocentCommitmentsMerkleTree.insert(outCommitmentsHashWithIndex[j])
     }
 
