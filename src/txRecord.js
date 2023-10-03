@@ -45,8 +45,8 @@ class TxRecord {
     if (this.index == 0) {
       return
     }
-    console.log('txRecord: ', txRecord)
-    console.log('txRecordsMerkleTree: ', txRecordsMerkleTree)
+    // console.log('txRecord: ', txRecord)
+    // console.log('txRecordsMerkleTree: ', txRecordsMerkleTree)
     const txRecordsPathIndex = txRecordsMerkleTree.indexOf(txRecord)
     const txRecordsPathElements = txRecordsMerkleTree.path(this.index).pathElements
 
@@ -89,7 +89,7 @@ class TxRecord {
     }
 
     var outCommitmentsHashWithIndex = []
-    console.log('----length: ', this.outputs.length)
+    // console.log('----length: ', this.outputs.length)
     for (var j = 0; j < this.outputs.length; j++) {
       outputCommitment.push(this.outputs[j].getCommitment())
       outAmount.push(this.outputs[j].amount)
@@ -98,12 +98,12 @@ class TxRecord {
       outCommitmentsHashWithIndex.push(poseidonHash([this.outputs[j].getCommitment(), this.index + j]))
       // console.log('====accInnocentComMT before: ', accInnocentCommitmentsMerkleTree)
       // console.log('pushing outCommitmentsHashWithIndex: ', outCommitmentsHashWithIndex[j])
-      console.log('----outCommitmentsList', outCommitmentsHashWithIndex)
+      // console.log('----outCommitmentsList', outCommitmentsHashWithIndex)
       accInnocentCommitmentsMerkleTree.insert(outCommitmentsHashWithIndex[j])
       // console.log('====accInnocentComMT after: ', accInnocentCommitmentsMerkleTree)
     }
 
-    console.log('----outCommitmentsList', outCommitmentsHashWithIndex)
+    // console.log('----outCommitmentsList', outCommitmentsHashWithIndex)
 
     const accInnocentOutputPathElements = accInnocentCommitmentsMerkleTree
       .path(2 * stepCount)
@@ -117,7 +117,7 @@ class TxRecord {
     const step_out = step_outHasher + isLastStep * (this.hash() - step_outHasher)
 
     console.log('####################')
-    console.log(txRecordsPathElements, 2 * stepCount, inPrivateKey, outputCommitment)
+    console.log('some info: ', txRecordsPathElements, 2 * stepCount, inPrivateKey, outputCommitment)
 
     return {
       txRecordsPathElements: txRecordsPathElements,

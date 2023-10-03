@@ -163,18 +163,24 @@ describe('ProofOfInnocence', function () {
     })
 
     // console.log('====accInnocentCommitmentsMT: ', accInnocentCommitmentsMerkleTree)
-    console.log('----steps: ', steps)
-    console.log('====steps length: ', steps.length)
+    // console.log('----steps: ', steps)
+    // console.log('====steps length: ', steps.length)
+    let ins = []
     for (const step of steps) {
       // console.log('for each step: ', step)
       // console.log('step.hash(): ', step.hash())
-      step.generateInputs({
-        txRecordsMerkleTree,
-        allowedTxRecordsMerkleTree: allowedTxRecordsMerkleTree,
-        accInnocentCommitmentsMerkleTree: accInnocentCommitmentsMerkleTree,
-        isLastStep: false,
-        stepCount: 0,
-      })
+      ins.push(
+        step.generateInputs({
+          txRecordsMerkleTree,
+          allowedTxRecordsMerkleTree: allowedTxRecordsMerkleTree,
+          accInnocentCommitmentsMerkleTree: accInnocentCommitmentsMerkleTree,
+          isLastStep: false,
+          stepCount: 0,
+        }),
+      )
+      // console.log(ins)
     }
+    console.log('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
+    console.log('step inputs: ', ins)
   })
 })

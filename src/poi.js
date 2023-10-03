@@ -129,7 +129,7 @@ async function getPoiSteps({ provider, tornadoPool, keypair, txRecordEvent }) {
   if (todoProve.size > 0) {
     throw new Error('Not enough proofs')
   }
-  console.log('txRecords to prove: ', txRecordEvents)
+  // console.log('txRecords to prove: ', txRecordEvents)
   return { steps: steps.reverse(), txRecordEvents }
 }
 
@@ -151,7 +151,7 @@ async function proveInclusion({ provider, tornadoPool, keypair, allowlist, txHas
   })
   const txRecordMerkleTree = buildTxRecordMerkleTree({ events: txRecordEvents })
   const allowedTxRecordsMerkleTree = buildTxRecordMerkleTree({ events: txRecordEvents })
-  console.log(steps)
+  // console.log(steps)
 }
 
 module.exports = { proveInclusion, getPoiSteps, buildTxRecordMerkleTree, getTxRecord }
