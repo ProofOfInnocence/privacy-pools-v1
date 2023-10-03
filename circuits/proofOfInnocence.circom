@@ -4,19 +4,6 @@ include "./merkleProof.circom";
 include "./merkleTreeUpdater.circom";
 include "./keypair.circom";
 
-/*
-Utxo structure:
-{
-    amount,
-    pubkey,
-    blinding, // random number
-}
-
-commitment = hash(amount, pubKey, blinding)
-nullifier = hash(commitment, merklePath, sign(privKey, commitment, merklePath))
-*/
-
-
 // checks if a number is bigger than a constant
 template IsNum2Bits(n) {
     signal input in;
@@ -38,9 +25,8 @@ template IsNum2Bits(n) {
     isLower <== isEqual.out;
 }
 
-
 // Transaction with 2 inputs and 2 outputs
-template Transaction(levels, nIns, nOuts, zeroLeaf) {
+template ProofOfInnocence(levels, nIns, nOuts, zeroLeaf) {
 
     // First MT: txRecordMT created by events
     signal private input txRecordPathElements[levels];
@@ -52,7 +38,7 @@ template Transaction(levels, nIns, nOuts, zeroLeaf) {
     signal private input accInnocentCommitmentPathElements[nIns][levels];
     signal private input accInnocentCommitmentPathIndex[nIns];
     //checks if last step is reached
-    signal private input isLastStep;
+    // signal private input isLastStep;
 
     signal private input txRecordsMerkleRoot;
     signal private input allowedTxRecordsMerkleRoot;
@@ -80,15 +66,12 @@ template Transaction(levels, nIns, nOuts, zeroLeaf) {
     signal private input inPrivateKey[nIns];
     signal private input inBlinding[nIns];
     signal private input inPathIndices[nIns];
-    // signal private input inPathElements[nIns][levels];
 
     // data for transaction outputs
     signal private input outputCommitment[nOuts];
     signal private input outAmount[nOuts];
     signal private input outPubkey[nOuts];
     signal private input outBlinding[nOuts];
-    // signal private input outPrivateKey[nOuts];
-    // signal private input outPathIndices[nOuts];
 
 
 
@@ -181,52 +164,24 @@ template Transaction(levels, nIns, nOuts, zeroLeaf) {
         // need to be checked either).
     }
 
-    component outSignature[nOuts];
     component outCommitmentHasher[nOuts];
-    // component outNullifierHasher[nOuts];
     component accInnocentOutputHasher[nOuts];
-    component outTree[nOuts];
-    component outCheckRoot[nOuts];
-    // var sumIns = 0;
 
     // verify correctness of tx outputs and calculate Hash(outCommitment, idx)
     for (var tx = 0; tx < nOuts; tx++) {
-        // outKeypair[tx] = Keypair();
-        // outKeypair[tx].privateKey <== outPrivateKey[tx];
-
         outCommitmentHasher[tx] = Poseidon(3);
         outCommitmentHasher[tx].inputs[0] <== outAmount[tx];
-        // outCommitmentHasher[tx].inputs[1] <== outKeypair[tx].publicKey
         outCommitmentHasher[tx].inputs[1] <== outPubkey[tx];
         outCommitmentHasher[tx].inputs[2] <== outBlinding[tx];
-
         outCommitmentHasher[tx].out === outputCommitment[tx];
-
-        // outSignature[tx] = Signature();
-        // outSignature[tx].privateKey <== outPrivateKey[tx];
-        // outSignature[tx].commitment <== outCommitmentHasher[tx].out;
-        // outSignature[tx].merklePath <== outPathIndices[tx];
-
-        // outNullifierHasher[tx] = Poseidon(3);
-        // outNullifierHasher[tx].inputs[0] <== outCommitmentHasher[tx].out;
-        // outNullifierHasher[tx].inputs[1] <== outputsStartIndex + tx;
-        // outNullifierHasher[tx].inputs[2] <== outSignature[tx].out;
-
         accInnocentOutputHasher[tx] = Poseidon(2);
         accInnocentOutputHasher[tx].inputs[0] <== outputCommitment[tx];
         accInnocentOutputHasher[tx].inputs[1] <== outputsStartIndex + tx;
-
-
     }
 
     // accumulate innocent output commitments with idx
     component treeUpdater = MerkleTreeUpdater(levels, 1, zeroLeaf);
     treeUpdater.oldRoot <== accInnocentCommitmentMerkleRoot;
-
-    // update merkle tree with output commitments
-    // for (var tx = 0; tx < nOuts; tx++) {
-    //     treeUpdater.leaves[tx] <== outNullifierHasher[tx].out;
-    // }
     for (var tx = 0; tx < nOuts; tx++) {
         treeUpdater.leaves[tx] <== accInnocentOutputHasher[tx].out;
     }
@@ -238,16 +193,16 @@ template Transaction(levels, nIns, nOuts, zeroLeaf) {
     }
 
 
-    component stepHasher = Poseidon(3);
-    stepHasher.inputs[0] <== txRecordsMerkleRoot;
-    stepHasher.inputs[1] <== allowedTxRecordsMerkleRoot;
-    stepHasher.inputs[2] <== treeUpdater.newRoot;
+    // component stepHasher = Poseidon(3);
+    // stepHasher.inputs[0] <== txRecordsMerkleRoot;
+    // stepHasher.inputs[1] <== allowedTxRecordsMerkleRoot;
+    // stepHasher.inputs[2] <== treeUpdater.newRoot;
     
-    step_out <== stepHasher.out + isLastStep * (txRecordHasher.out - stepHasher.out);
+    // step_out <== stepHasher.out + isLastStep * (txRecordHasher.out - stepHasher.out);
     // step_out <== stepHasher.out;
 
 }
 
 // zeroLeaf = Poseidon(zero, zero)
 // default `zero` value is keccak256("tornado") % FIELD_SIZE = 21663839004416932945382355908790599225266501822907911457504978515578255421292
-component main = Transaction(23, 2, 2, 11850551329423159860688778991827824730037759162201783566284850822760196767874);
+component main = ProofOfInnocence(23, 2, 2, 11850551329423159860688778991827824730037759162201783566284850822760196767874);
