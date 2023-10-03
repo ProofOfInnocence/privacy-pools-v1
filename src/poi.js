@@ -149,9 +149,24 @@ async function proveInclusion({ provider, tornadoPool, keypair, allowlist, txHas
     keypair,
     txRecordEvent: event,
   })
-  const txRecordMerkleTree = buildTxRecordMerkleTree({ events: txRecordEvents })
+  const txRecordsMerkleTree = buildTxRecordMerkleTree({ events: txRecordEvents })
   const allowedTxRecordsMerkleTree = buildTxRecordMerkleTree({ events: txRecordEvents })
-  // console.log(steps)
+  let accInnocentCommitmentsMerkleTree = new MerkleTree(MERKLE_TREE_HEIGHT, [], {
+    hashFunction: poseidonHash2,
+  })
+  for (const step of steps) {
+    const stepInputs = step.generateInputs({
+      txRecordsMerkleTree,
+      allowedTxRecordsMerkleTree: allowedTxRecordsMerkleTree,
+      accInnocentCommitmentsMerkleTree: accInnocentCommitmentsMerkleTree,
+      isLastStep: false,
+      stepCount: 0,
+    })
+    console.log(step)
+    const inputs_str = JSON.stringify(stepInputs, null, 2)
+    console.log('step inputs: ', inputs_str)
+    return inputs_str
+  }
 }
 
 module.exports = { proveInclusion, getPoiSteps, buildTxRecordMerkleTree, getTxRecord }

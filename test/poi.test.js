@@ -3,6 +3,7 @@ const { ethers, waffle } = hre
 const { loadFixture } = waffle
 const { expect } = require('chai')
 const { utils } = ethers
+const { prove } = require('../src/prover')
 
 const Utxo = require('../src/utxo')
 const { transaction, registerAndTransact, prepareTransaction, buildMerkleTree } = require('../src/index')
@@ -146,42 +147,16 @@ describe('ProofOfInnocence', function () {
       tornadoPool,
       txHash: result.transactionHash,
     })
-
-    const { steps, txRecordEvents } = await getPoiSteps({
+    // const txRecordsMerkleTree = buildTxRecordMerkleTree({ events: txRecordEvents })
+    // const allowedTxRecordsMerkleTree = buildTxRecordMerkleTree({ events: txRecordEvents })
+    const firstStepInput = await proveInclusion({
       provider: ethers.provider,
       tornadoPool,
       keypair: aliceKeypair,
-      txRecordEvent: event,
+      txHash: result.transactionHash,
     })
-    // console.log('txRecordEvents: ', txRecordEvents)
-    const txRecordsMerkleTree = buildTxRecordMerkleTree({ events: txRecordEvents })
-    // console.log('txRecordMerkleTree:', txRecordsMerkleTree)
-    const allowedTxRecordsMerkleTree = buildTxRecordMerkleTree({ events: txRecordEvents })
-    let accInnocentCommitmentsMerkleTree = new MerkleTree(MERKLE_TREE_HEIGHT, [], {
-      hashFunction: poseidonHash2,
-    })
-
-    // console.log('====accInnocentCommitmentsMT: ', accInnocentCommitmentsMerkleTree)
-    // console.log('----steps: ', steps)
-    // console.log('====steps length: ', steps.length)
-    let ins = []
-    for (const step of steps) {
-      // console.log('for each step: ', step)
-      // console.log('step.hash(): ', step.hash())
-      const stepInputs = step.generateInputs({
-        txRecordsMerkleTree,
-        allowedTxRecordsMerkleTree: allowedTxRecordsMerkleTree,
-        accInnocentCommitmentsMerkleTree: accInnocentCommitmentsMerkleTree,
-        isLastStep: false,
-        stepCount: 0,
-      })
-      // ins.push(stepInputs)
-      console.log(step)
-      console.log('step inputs: ', JSON.stringify(stepInputs, null, 2))
-      break
-      // console.log(ins)
-    }
-    // console.log('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
-    // console.log('step inputs: ', JSON.stringify(ins, null, 2))
+    console.log('@@@@@@@@@@@@@')
+    console.log(firstStepInput)
+    const proof = await prove(firstStepInput, `./artifacts/circuits/proofOfInnocence`)
   })
 })
