@@ -64,7 +64,9 @@ describe('ProofOfInnocence', function () {
     const { tornadoPool } = await loadFixture(fixture)
     const aliceDepositAmount1 = utils.parseEther('0.03')
     const aliceDepositAmount2 = utils.parseEther('0.04')
-    const aliceWithdrawAmount = utils.parseEther('0.05')
+    const aliceWithdrawAmount1 = utils.parseEther('0.05')
+    const aliceDepositAmount3 = utils.parseEther('0.07')
+    const aliceWithdrawAmount2 = utils.parseEther('0.06')
     const bobEthAddress = '0xDeaD00000000000000000000000000000000BEEf'
 
     const aliceKeypair = new Keypair() // contains private and public keys
@@ -87,33 +89,52 @@ describe('ProofOfInnocence', function () {
     expect(await balance({ provider: ethers.provider, tornadoPool, keypair: aliceKeypair })).to.be.equal(
       aliceDepositAmount1.add(aliceDepositAmount2),
     )
-    const result = await withdraw({
+    const result1 = await withdraw({
       provider: ethers.provider,
       tornadoPool,
       keypair: aliceKeypair,
-      amount: aliceWithdrawAmount,
+      amount: aliceWithdrawAmount1,
       recipient: bobEthAddress,
     })
+
     expect(await balance({ provider: ethers.provider, tornadoPool, keypair: aliceKeypair })).to.be.equal(
-      aliceDepositAmount1.add(aliceDepositAmount2).sub(aliceWithdrawAmount),
+      aliceDepositAmount1.add(aliceDepositAmount2).sub(aliceWithdrawAmount1),
     )
 
-    let firstStepInput = await proveInclusionWithTxHash({
+    await deposit({
       provider: ethers.provider,
       tornadoPool,
       keypair: aliceKeypair,
-      txHash: result.transactionHash,
+      amount: aliceDepositAmount3,
+    })
+
+    expect(await balance({ provider: ethers.provider, tornadoPool, keypair: aliceKeypair })).to.be.equal(
+      aliceDepositAmount1.add(aliceDepositAmount2).sub(aliceWithdrawAmount1).add(aliceDepositAmount3),
+    )
+
+    const result2 = await withdraw({
+      provider: ethers.provider,
+      tornadoPool,
+      keypair: aliceKeypair,
+      amount: aliceWithdrawAmount2,
+      recipient: bobEthAddress,
+    })
+
+    let stepInputs = await proveInclusionWithTxHash({
+      provider: ethers.provider,
+      tornadoPool,
+      keypair: aliceKeypair,
+      txHash: result2.transactionHash,
     })
     // const { proof, publicSignals } = await prove(firstStepInput, `./membership-proof/artifacts/circuits/proofOfInnocence`)
     // console.log(proof)
     // console.log(publicSignals)
     const path = './membership-proof/test/inputs.json'
     // console.log(JSON.stringify(, null, 2))
-    const inputs = ffjavascript.stringifyBigInts(firstStepInput)
+    const inputs = ffjavascript.stringifyBigInts(stepInputs)
     // write inputs to te path
     fs.writeFileSync(path, JSON.stringify(inputs, null, 2))
   })
-
 
   it('should generate inputs before withdraw', async function () {
     const { tornadoPool } = await loadFixture(fixture)

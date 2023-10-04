@@ -28,9 +28,16 @@ template IsNum2Bits(n) {
     isLower <== isEqual.out;
 }
 
-// Transaction with 2 inputs and 2 outputs
+// step circuit for Nova
 template Step(levels, nIns, nOuts, zeroLeaf) {
-
+    signal input step_in;
+    // step_out = Hash(txRecordsMerkleRoot, allowedTxRecordsMerkleRoot, newAccInnocentCommitmentMerkleRoot)
+    // if not last step, otherwise txHash
+    signal output step_out;
+    // Merkle roots of the three MTs
+    signal input txRecordsMerkleRoot;
+    signal input allowedTxRecordsMerkleRoot;
+    signal input accInnocentCommitmentsMerkleRoot;
     // First MT: txRecordMT created by events
     signal input txRecordsPathElements[levels];
     signal input txRecordsPathIndex;
@@ -40,42 +47,28 @@ template Step(levels, nIns, nOuts, zeroLeaf) {
     // Third MT: accInnocentCommitmentMT created by the user
     signal input accInnocentCommitmentsPathElements[nIns][levels];
     signal input accInnocentCommitmentsPathIndex[nIns];
-    //checks if last step is reached
+    // checks if last step is reached
     signal input isLastStep;
-
-    signal input txRecordsMerkleRoot;
-    signal input allowedTxRecordsMerkleRoot;
-    signal input accInnocentCommitmentsMerkleRoot;
-    // step_in = Hash(txRecordsMerkleRoot, allowedTxRecordsMerkleRoot, accInnocentCommitmentMerkleRoot)
-    signal input step_in;
-    // step_out_0 = txRecordsMerkleRoot
-    // step_out_1 = allowedTxRecordsMerkleRoot
-    // step_out_2 = newAccInnocentCommitmentMerkleRoot
-    // step_out = Hash(txRecordsMerkleRoot, allowedTxRecordsMerkleRoot, newAccInnocentCommitmentMerkleRoot)
-    signal output step_out;
     // info belongs to outputCommitments helping writing them in accInnocentCommitmentMT
     signal input accInnocentOutputPathElements[levels - 1];
     signal input accInnocentOutputPathIndex;
-    // extAmount = external amount used for deposits and withdrawals
-    // correct extAmount range is enforced on the smart contract
-    // publicAmount = extAmount - fee
+    // public amount of the transaction, if greater than zero, it is a deposit, otherwise it is a withdrawal
     signal input publicAmount;
     // outputsStartIndex = index of the first outputCommitment in the commitmentMT from the contract
     signal input outputsStartIndex;
-
     // data for transaction inputs
     signal input inputNullifier[nIns];
     signal input inAmount[nIns];
     signal input inPrivateKey[nIns];
     signal input inBlinding[nIns];
     signal input inPathIndices[nIns];
-
     // data for transaction outputs
     signal input outputCommitment[nOuts];
     signal input outAmount[nOuts];
     signal input outPubkey[nOuts];
     signal input outBlinding[nOuts];
 
+    // step_in = Hash(txRecordsMerkleRoot, allowedTxRecordsMerkleRoot, accInnocentCommitmentMerkleRoot)
     component stepInHasher = Poseidon(3);
     stepInHasher.inputs[0] <== txRecordsMerkleRoot;
     stepInHasher.inputs[1] <== allowedTxRecordsMerkleRoot;
@@ -83,9 +76,11 @@ template Step(levels, nIns, nOuts, zeroLeaf) {
 
     stepInHasher.out === step_in;
 
+    // ensure that isLastStep is either 0 or 1
     0 === isLastStep * (1 - isLastStep);
 
     // 1 - calculate txRecord
+    // txRecord = Hash(Hash(Hash(inputNullifier1, inputNullifier2, outputCommitment1, outputCommitment2), publicAmount), outputsStartIndex)
     component inputsOutputsHasher = Poseidon(nIns + nOuts);
     for (var i = 0; i < nIns; i++) {
         inputsOutputsHasher.inputs[i] <== inputNullifier[i];
@@ -108,11 +103,13 @@ template Step(levels, nIns, nOuts, zeroLeaf) {
     for (var i = 0; i < levels; i++) {
         txRecordTree.pathElements[i] <== txRecordsPathElements[i];
     }
-    component checkTxRecorsRoot = ForceEqualIfEnabled();
-    checkTxRecorsRoot.in[0] <== txRecordsMerkleRoot;
-    checkTxRecorsRoot.in[1] <== txRecordTree.root;
-    checkTxRecorsRoot.enabled <== (1 - isLastStep);
-    // 3 - if publicAmount is positive (deposit), check if it is in allowlist  SUBJECT TO CHANGE
+    // check whether txRecord is in txRecordsMT if it is not the last step
+    component checkTxRecordsRoot = ForceEqualIfEnabled();
+    checkTxRecordsRoot.in[0] <== txRecordsMerkleRoot;
+    checkTxRecordsRoot.in[1] <== txRecordTree.root;
+    checkTxRecordsRoot.enabled <== (1 - isLastStep);
+
+    // 3 - if publicAmount is positive (deposit), check if it is in allowlist 
     component allowedTxRecordTree = MerkleProof(levels);
     allowedTxRecordTree.leaf <== txRecordHasher.out;
     allowedTxRecordTree.pathIndices <== allowedTxRecordsPathIndex;
@@ -127,7 +124,7 @@ template Step(levels, nIns, nOuts, zeroLeaf) {
     isDeposit.in <== publicAmount;
     checkAllowlistRoot.enabled <== isDeposit.isLower;
 
-    // // TODO: remove keypair calculation
+    //components for calculating txRecord input info
     component inKeypair[nIns];
     component inSignature[nIns];
     component inCommitmentHasher[nIns];
@@ -180,6 +177,7 @@ template Step(levels, nIns, nOuts, zeroLeaf) {
         // need to be checked either).
     }
 
+    // components for calculating txRecord output info
     component outCommitmentHasher[nOuts];
     component accInnocentOutputHasher[nOuts];
 
@@ -208,16 +206,13 @@ template Step(levels, nIns, nOuts, zeroLeaf) {
         treeUpdater.pathElements[i] <== accInnocentOutputPathElements[i];
     }
 
-
+    // step_out = Hash(txRecordsMerkleRoot, allowedTxRecordsMerkleRoot, newAccInnocentCommitmentMerkleRoot)
     component stepHasher = Poseidon(3);
     stepHasher.inputs[0] <== txRecordsMerkleRoot;
     stepHasher.inputs[1] <== allowedTxRecordsMerkleRoot;
     stepHasher.inputs[2] <== treeUpdater.newRoot;
 
-    
     step_out <== stepHasher.out + isLastStep * (txRecordWithoutIndexHasher.out - stepHasher.out);
 }
 
-// zeroLeaf = Poseidon(zero, zero)
-// default `zero` value is keccak256("tornado") % FIELD_SIZE = 21663839004416932945382355908790599225266501822907911457504978515578255421292
 component main{public [step_in]} = Step(5, 2, 2, 11850551329423159860688778991827824730037759162201783566284850822760196767874);
