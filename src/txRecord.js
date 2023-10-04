@@ -11,12 +11,14 @@ class TxRecord {
   hash() {
     return poseidonHash([
       poseidonHash([
-        this.inputs[0].getNullifier(),
-        this.inputs[1].getNullifier(),
-        this.outputs[0].getCommitment(),
-        this.outputs[1].getCommitment(),
+        poseidonHash([
+          this.inputs[0].getNullifier(),
+          this.inputs[1].getNullifier(),
+          this.outputs[0].getCommitment(),
+          this.outputs[1].getCommitment(),
+        ]),
+        this.publicAmount,
       ]),
-      this.publicAmount,
       this.index,
     ])
   }
@@ -24,12 +26,14 @@ class TxRecord {
   static hashFromEvent(event) {
     return poseidonHash([
       poseidonHash([
-        event.args.inputNullifier1,
-        event.args.inputNullifier2,
-        event.args.outputCommitment1,
-        event.args.outputCommitment2,
+        poseidonHash([
+          event.args.inputNullifier1,
+          event.args.inputNullifier2,
+          event.args.outputCommitment1,
+          event.args.outputCommitment2,
+        ]),
+        event.args.publicAmount,
       ]),
-      event.args.publicAmount,
       event.args.index,
     ])
   }
@@ -85,7 +89,9 @@ class TxRecord {
       inBlinding.push(this.inputs[i].blinding)
       inPathIndices.push(this.inputs[i].index)
       if (this.inputs[i].amount > 0) {
-        const curBlindedCommitment = toFixedHex(poseidonHash([this.inputs[i].getCommitment(), this.inputs[i].index]))
+        const curBlindedCommitment = toFixedHex(
+          poseidonHash([this.inputs[i].getCommitment(), this.inputs[i].index]),
+        )
 
         const curAccInnocentIndex = accInnocentCommitmentsMerkleTree.indexOf(curBlindedCommitment)
         if (curAccInnocentIndex == -1) {
@@ -106,11 +112,13 @@ class TxRecord {
       outAmount.push(this.outputs[j].amount)
       outPubkey.push(this.outputs[j].keypair.pubkey)
       outBlinding.push(this.outputs[j].blinding)
-      accInnocentCommitmentsMerkleTree.insert(toFixedHex(poseidonHash([this.outputs[j].getCommitment(), this.outputs[j].index])))
+      accInnocentCommitmentsMerkleTree.insert(
+        toFixedHex(poseidonHash([this.outputs[j].getCommitment(), this.outputs[j].index])),
+      )
     }
-    const accInnocentOutputPathIndex = parseInt((accInnocentCommitmentsMerkleTree.elements().length - 1)/2)
+    const accInnocentOutputPathIndex = parseInt((accInnocentCommitmentsMerkleTree.elements().length - 1) / 2)
     const accInnocentOutputPathElements = accInnocentCommitmentsMerkleTree
-      .path(accInnocentOutputPathIndex*2)
+      .path(accInnocentOutputPathIndex * 2)
       .pathElements.slice(1) // may be .slice(1)
     return {
       txRecordsPathElements: txRecordsPathElements,

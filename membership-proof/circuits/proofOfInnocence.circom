@@ -83,7 +83,7 @@ template Step(levels, nIns, nOuts, zeroLeaf) {
 
     stepInHasher.out === step_in;
 
-
+    0 === isLastStep * (1 - isLastStep);
 
     // 1 - calculate txRecord
     component inputsOutputsHasher = Poseidon(nIns + nOuts);
@@ -93,10 +93,13 @@ template Step(levels, nIns, nOuts, zeroLeaf) {
     for (var i = 0; i < nOuts; i++) {
         inputsOutputsHasher.inputs[nIns + i] <== outputCommitment[i];
     }
-    component txRecordHasher = Poseidon(3);
-    txRecordHasher.inputs[0] <== inputsOutputsHasher.out;
-    txRecordHasher.inputs[1] <== publicAmount;
-    txRecordHasher.inputs[2] <== outputsStartIndex;
+    component txRecordWithoutIndexHasher = Poseidon(2);
+    txRecordWithoutIndexHasher.inputs[0] <== inputsOutputsHasher.out;
+    txRecordWithoutIndexHasher.inputs[1] <== publicAmount;
+
+    component txRecordHasher = Poseidon(2);
+    txRecordHasher.inputs[0] <== txRecordWithoutIndexHasher.out;
+    txRecordHasher.inputs[1] <== outputsStartIndex;
 
     // 2 - calculate txRecord merkle path
     component txRecordTree = MerkleProof(levels);
@@ -105,7 +108,10 @@ template Step(levels, nIns, nOuts, zeroLeaf) {
     for (var i = 0; i < levels; i++) {
         txRecordTree.pathElements[i] <== txRecordsPathElements[i];
     }
-    txRecordsMerkleRoot === txRecordTree.root;
+    component checkTxRecorsRoot = ForceEqualIfEnabled();
+    checkTxRecorsRoot.in[0] <== txRecordsMerkleRoot;
+    checkTxRecorsRoot.in[1] <== txRecordTree.root;
+    checkTxRecorsRoot.enabled <== (1 - isLastStep);
     // 3 - if publicAmount is positive (deposit), check if it is in allowlist  SUBJECT TO CHANGE
     component allowedTxRecordTree = MerkleProof(levels);
     allowedTxRecordTree.leaf <== txRecordHasher.out;
@@ -208,9 +214,8 @@ template Step(levels, nIns, nOuts, zeroLeaf) {
     stepHasher.inputs[1] <== allowedTxRecordsMerkleRoot;
     stepHasher.inputs[2] <== treeUpdater.newRoot;
 
-    0 === isLastStep * (1 - isLastStep);
     
-    step_out <== stepHasher.out + isLastStep * (txRecordHasher.out - stepHasher.out);
+    step_out <== stepHasher.out + isLastStep * (txRecordWithoutIndexHasher.out - stepHasher.out);
 }
 
 // zeroLeaf = Poseidon(zero, zero)
