@@ -12,7 +12,7 @@ const { toFixedHex, poseidonHash, poseidonHash2 } = require('../src/utils')
 const { Keypair } = require('../src/keypair')
 const MerkleTree = require('fixed-merkle-tree')
 
-const { getUtxos, deposit, withdraw, balance, getTxRecordEvents } = require('../src/cli')
+const { getUtxos, deposit, withdraw, balance } = require('../src/cli')
 const {
   proveInclusion,
   proveInclusionWithTxHash,

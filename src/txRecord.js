@@ -118,9 +118,13 @@ class TxRecord {
       outAmount.push(this.outputs[j].amount)
       outPubkey.push(this.outputs[j].keypair.pubkey)
       outBlinding.push(this.outputs[j].blinding)
-      accInnocentCommitmentsMerkleTree.insert(
-        toFixedHex(poseidonHash([this.outputs[j].getCommitment(), this.outputs[j].index])),
-      )
+      if (!isLastStep) {
+        accInnocentCommitmentsMerkleTree.insert(
+          toFixedHex(poseidonHash([this.outputs[j].getCommitment(), this.outputs[j].index])),
+        )
+      } else {
+        accInnocentCommitmentsMerkleTree.insert('0x00')
+      }
     }
     const accInnocentOutputPathIndex = parseInt((accInnocentCommitmentsMerkleTree.elements().length - 1) / 2)
     const accInnocentOutputPathElements = accInnocentCommitmentsMerkleTree

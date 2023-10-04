@@ -5,6 +5,11 @@ const { toFixedHex, FIELD_SIZE } = require('./utils')
 const { proveInclusion } = require('./poi')
 
 const TxRecord = require('./txRecord')
+const {
+  getNullifierEvents,
+  getCommitmentEvents,
+  getTxRecordEvents,
+} = require('./events.js')
 
 async function getUtxos({ provider, tornadoPool, keypair }) {
   const nullifierEvents = await getNullifierEvents({ provider, tornadoPool })
@@ -66,7 +71,7 @@ async function transact({ provider, tornadoPool, keypair, amount, recipient = 0,
       publicAmount,
       index: 0,
     })
-    const proof = await proveInclusion({ provider, tornadoPool, keypair, txRecord: withdrawTxRecord })
+    const proof = await proveInclusion({ provider, tornadoPool, keypair, finalTxRecord: withdrawTxRecord })
     console.log('Withdrawing with proof', proof)
   }
   return await transaction({ tornadoPool, inputs, outputs, recipient })
@@ -84,8 +89,5 @@ module.exports = {
   getUtxos,
   deposit,
   withdraw,
-  balance,
-  getNullifierEvents,
-  getCommitmentEvents,
-  getTxRecordEvents,
+  balance
 }

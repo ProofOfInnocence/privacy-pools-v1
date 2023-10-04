@@ -4,11 +4,7 @@ const TxRecord = require('./txRecord')
 const MerkleTree = require('fixed-merkle-tree')
 
 const MERKLE_TREE_HEIGHT = 5
-const {
-  getNullifierEvents,
-  getCommitmentEvents,
-  getTxRecordEvents,
-} = require('./events.js')
+const { getNullifierEvents, getCommitmentEvents, getTxRecordEvents } = require('./events.js')
 
 async function getTxRecord({ provider, tornadoPool, txHash }) {
   const receipt = await provider.getTransactionReceipt(txHash)
@@ -49,7 +45,7 @@ async function getMappings({ provider, tornadoPool, keypair }) {
   return { nullifierToUtxo, commitmentToUtxo }
 }
 
-async function getPoiSteps({ provider, tornadoPool, keypair, nullifierToUtxo, commitmentToUtxo, txRecord }) {
+async function getPoiSteps({ provider, tornadoPool, keypair, nullifierToUtxo, commitmentToUtxo, finalTxRecord }) {
   const txRecordEvents = await getTxRecordEvents({ provider, tornadoPool })
   let txRecords = []
   for (const event of txRecordEvents) {
@@ -65,7 +61,7 @@ async function getPoiSteps({ provider, tornadoPool, keypair, nullifierToUtxo, co
     if (!nullifierToUtxo.has(toFixedHex(event.args.inputNullifier2))) {
       throw new Error('Should not happen')
     }
-    const txRecord = new TxRecord({
+    const _txRecord = new TxRecord({
       inputs: [
         nullifierToUtxo.get(toFixedHex(event.args.inputNullifier1)),
         nullifierToUtxo.get(toFixedHex(event.args.inputNullifier2)),
@@ -77,19 +73,19 @@ async function getPoiSteps({ provider, tornadoPool, keypair, nullifierToUtxo, co
       publicAmount: event.args.publicAmount,
       index: event.args.index,
     })
-    txRecords.push(txRecord)
+    txRecords.push(_txRecord)
   }
 
-  let steps = [txRecord]
+  let steps = [finalTxRecord]
   const todoProve = new Set()
-  if (txRecord.inputs[0].amount > 0) {
-    todoProve.add(toFixedHex(txRecord.inputs[0].getCommitment()))
+  if (finalTxRecord.inputs[0].amount > 0) {
+    todoProve.add(toFixedHex(finalTxRecord.inputs[0].getCommitment()))
   }
-  if (txRecord.inputs[1].amount > 0) {
-    todoProve.add(toFixedHex(txRecord.inputs[1].getCommitment()))
+  if (finalTxRecord.inputs[1].amount > 0) {
+    todoProve.add(toFixedHex(finalTxRecord.inputs[1].getCommitment()))
   }
 
-  txRecords = txRecords.filter((x) => x.index < txRecord.index)
+  txRecords = txRecords.filter((x) => x.index < finalTxRecord.index ? finalTxRecord.index: x.index + 1)
   txRecords.sort((a, b) => b.index - a.index)
 
   for (const txRecord of txRecords) {
@@ -129,7 +125,7 @@ async function proveInclusionWithTxHash({ provider, tornadoPool, keypair, allowl
   const event = await getTxRecord({ provider, tornadoPool, txHash })
   const { nullifierToUtxo, commitmentToUtxo } = await getMappings({ provider, tornadoPool, keypair })
 
-  const txRecord = new TxRecord({
+  const finalTxRecord = new TxRecord({
     inputs: [
       nullifierToUtxo.get(toFixedHex(event.args.inputNullifier1)),
       nullifierToUtxo.get(toFixedHex(event.args.inputNullifier2)),
@@ -147,7 +143,7 @@ async function proveInclusionWithTxHash({ provider, tornadoPool, keypair, allowl
     tornadoPool,
     keypair,
     allowlist,
-    txRecord,
+    finalTxRecord,
     nullifierToUtxo,
     commitmentToUtxo,
   })
@@ -158,12 +154,16 @@ async function proveInclusion({
   tornadoPool,
   keypair,
   allowlist,
-  txRecord,
+  finalTxRecord,
   nullifierToUtxo = null,
   commitmentToUtxo = null,
 }) {
-  if(!nullifierToUtxo || !commitmentToUtxo) {
-    const { nullifierToUtxo: nullifierToUtxo_, commitmentToUtxo: commitmentToUtxo_ } = await getMappings({ provider, tornadoPool, keypair })
+  if (!nullifierToUtxo || !commitmentToUtxo) {
+    const { nullifierToUtxo: nullifierToUtxo_, commitmentToUtxo: commitmentToUtxo_ } = await getMappings({
+      provider,
+      tornadoPool,
+      keypair,
+    })
     nullifierToUtxo = nullifierToUtxo_
     commitmentToUtxo = commitmentToUtxo_
   }
@@ -173,7 +173,7 @@ async function proveInclusion({
     keypair,
     nullifierToUtxo,
     commitmentToUtxo,
-    txRecord,
+    finalTxRecord,
   })
   const txRecordsMerkleTree = buildTxRecordMerkleTree({ events: txRecordEvents })
   const allowedTxRecordsMerkleTree = buildTxRecordMerkleTree({ events: txRecordEvents })
@@ -193,4 +193,10 @@ async function proveInclusion({
   return inputs
 }
 
-module.exports = { proveInclusion, proveInclusionWithTxHash, getPoiSteps, buildTxRecordMerkleTree, getTxRecord }
+module.exports = {
+  proveInclusion,
+  proveInclusionWithTxHash,
+  getPoiSteps,
+  buildTxRecordMerkleTree,
+  getTxRecord,
+}
