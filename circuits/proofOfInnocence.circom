@@ -49,7 +49,7 @@ template ProofOfInnocence(levels, nIns, nOuts, zeroLeaf) {
     // step_out_1 = allowedTxRecordsMerkleRoot
     // step_out_2 = newAccInnocentCommitmentMerkleRoot
     // step_out = Hash(txRecordsMerkleRoot, allowedTxRecordsMerkleRoot, newAccInnocentCommitmentMerkleRoot)
-    // signal output step_out;
+    signal output step_out;
     // info belongs to outputCommitments helping writing them in accInnocentCommitmentMT
     signal private input accInnocentOutputPathElements[levels - 1];
     signal private input accInnocentOutputPathIndex;
@@ -187,20 +187,20 @@ template ProofOfInnocence(levels, nIns, nOuts, zeroLeaf) {
     }
 
     // at every step, index must be increased by 2
-    treeUpdater.pathIndices <== accInnocentOutputPathIndex; // TODO IN CREATING INPUTS: check if this is correct
+    treeUpdater.pathIndices <== accInnocentOutputPathIndex;
     for (var i = 0; i < levels - 1; i++) {
-        treeUpdater.pathElements[i] <== accInnocentOutputPathElements[i]; // TODO IN CREATING INPUTS: check if this is correct
+        treeUpdater.pathElements[i] <== accInnocentOutputPathElements[i];
     }
 
 
-    // component stepHasher = Poseidon(3);
-    // stepHasher.inputs[0] <== txRecordsMerkleRoot;
-    // stepHasher.inputs[1] <== allowedTxRecordsMerkleRoot;
-    // stepHasher.inputs[2] <== treeUpdater.newRoot;
-    
-    // step_out <== stepHasher.out + isLastStep * (txRecordHasher.out - stepHasher.out);
-    // step_out <== stepHasher.out;
+    component stepHasher = Poseidon(3);
+    stepHasher.inputs[0] <== txRecordsMerkleRoot;
+    stepHasher.inputs[1] <== allowedTxRecordsMerkleRoot;
+    stepHasher.inputs[2] <== treeUpdater.newRoot;
 
+    0 === isLastStep * (1 - isLastStep);
+    
+    step_out <== stepHasher.out + isLastStep * (txRecordHasher.out - stepHasher.out);
 }
 
 // zeroLeaf = Poseidon(zero, zero)

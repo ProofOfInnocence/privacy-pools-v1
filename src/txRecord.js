@@ -52,8 +52,8 @@ class TxRecord {
       accInnocentCommitmentsMerkleTree.root(),
     ])
 
-    var allowedTxRecordsPathIndex = null
-    var allowedTxRecordsPathElements = null
+    let allowedTxRecordsPathIndex = null
+    let allowedTxRecordsPathElements = null
 
     if (BigInt(this.publicAmount) < BigInt(2) ** BigInt(240)) {
       allowedTxRecordsPathIndex = allowedTxRecordsMerkleTree.indexOf(txRecord)
@@ -66,19 +66,19 @@ class TxRecord {
       allowedTxRecordsPathElements = new Array(allowedTxRecordsMerkleTree.levels).fill(0)
     }
 
-    var inPrivateKey = []
-    var inputNullifier = []
-    var inAmount = []
-    var inBlinding = []
-    var inPathIndices = []
-    var outputCommitment = []
-    var outAmount = []
-    var outPubkey = []
-    var outBlinding = []
-    var accInnocentCommitmentsPathElements = []
-    var accInnocentCommitmentsPathIndex = []
+    let inPrivateKey = []
+    let inputNullifier = []
+    let inAmount = []
+    let inBlinding = []
+    let inPathIndices = []
+    let outputCommitment = []
+    let outAmount = []
+    let outPubkey = []
+    let outBlinding = []
+    let accInnocentCommitmentsPathElements = []
+    let accInnocentCommitmentsPathIndex = []
 
-    for (var i = 0; i < this.inputs.length; i++) {
+    for (let i = 0; i < this.inputs.length; i++) {
       inPrivateKey.push(this.inputs[i].keypair.privkey)
       inputNullifier.push(this.inputs[i].getNullifier())
       inAmount.push(this.inputs[i].amount)
@@ -100,39 +100,18 @@ class TxRecord {
         accInnocentCommitmentsPathElements.push(new Array(accInnocentCommitmentsMerkleTree.levels).fill(0))
       }
     }
-
-    var outCommitmentsHashWithIndex = []
-    // console.log('----length: ', this.outputs.length)
-    for (var j = 0; j < this.outputs.length; j++) {
+    for (let j = 0; j < this.outputs.length; j++) {
       outputCommitment.push(this.outputs[j].getCommitment())
       outAmount.push(this.outputs[j].amount)
       outPubkey.push(this.outputs[j].keypair.privkey)
       outBlinding.push(this.outputs[j].blinding)
-      // outCommitmentsHashWithIndex.push(poseidonHash([this.outputs[j].getCommitment(), this.index + j]))
-      // console.log('====accInnocentComMT before: ', accInnocentCommitmentsMerkleTree)
-      // console.log('pushing outCommitmentsHashWithIndex: ', outCommitmentsHashWithIndex[j])
-      // console.log('----outCommitmentsList', outCommitmentsHashWithIndex)
-      // accInnocentCommitmentsMerkleTree.insert(outCommitmentsHashWithIndex[j])
-      // console.log('====accInnocentComMT after: ', accInnocentCommitmentsMerkleTree)
     }
-
-    // console.log('----outCommitmentsList', outCommitmentsHashWithIndex)
     const accInnocentCommitmentsMerkleRoot = accInnocentCommitmentsMerkleTree.root()
     accInnocentCommitmentsMerkleTree.insert('0x00')
     const accInnocentOutputPathIndex = accInnocentCommitmentsMerkleTree.elements().length - 1
     const accInnocentOutputPathElements = accInnocentCommitmentsMerkleTree
       .path(accInnocentOutputPathIndex)
       .pathElements.slice(1) // may be .slice(1)
-
-    // const step_outHasher = poseidonHash([
-    //   txRecordsMerkleTree.root(),
-    //   allowedTxRecordsMerkleTree.root(),
-    //   accInnocentCommitmentsMerkleTree.root(),
-    // ])
-    // const step_out = step_outHasher + isLastStep * (this.hash() - step_outHasher)
-
-    console.log('####################')
-    console.log('some info: ', txRecordsPathElements, 2 * stepCount, inPrivateKey, outputCommitment)
 
     return {
       txRecordsPathElements: txRecordsPathElements,

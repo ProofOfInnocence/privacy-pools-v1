@@ -69,7 +69,7 @@ async function getProof({ inputs, outputs, tree, extAmount, fee, recipient, rela
     outPubkey: outputs.map((x) => x.keypair.pubkey),
   }
 
-  const proof = await prove(input, `./artifacts/circuits/transaction${inputs.length}`)
+  const { proof } = await prove(input, `./artifacts/circuits/transaction${inputs.length}`)
 
   const args = {
     proof,

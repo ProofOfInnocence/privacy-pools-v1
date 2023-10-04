@@ -135,28 +135,16 @@ describe('ProofOfInnocence', function () {
     expect(await balance({ provider: ethers.provider, tornadoPool, keypair: aliceKeypair })).to.be.equal(
       aliceDepositAmount1.add(aliceDepositAmount2).sub(aliceWithdrawAmount),
     )
-    // console.log(result)
-    await proveInclusion({
+
+    let firstStepInput = await proveInclusion({
       provider: ethers.provider,
       tornadoPool,
       keypair: aliceKeypair,
       txHash: result.transactionHash,
     })
-    const event = await getTxRecord({
-      provider: ethers.provider,
-      tornadoPool,
-      txHash: result.transactionHash,
-    })
-    // const txRecordsMerkleTree = buildTxRecordMerkleTree({ events: txRecordEvents })
-    // const allowedTxRecordsMerkleTree = buildTxRecordMerkleTree({ events: txRecordEvents })
-    const firstStepInput = await proveInclusion({
-      provider: ethers.provider,
-      tornadoPool,
-      keypair: aliceKeypair,
-      txHash: result.transactionHash,
-    })
-    console.log('@@@@@@@@@@@@@')
-    console.log(firstStepInput)
-    const proof = await prove(firstStepInput, `./artifacts/circuits/proofOfInnocence`)
+    const { proof, publicSignals } = await prove(firstStepInput, `./artifacts/circuits/proofOfInnocence`)
+    console.log(proof)
+    console.log(publicSignals)
+    console.log(JSON.stringify(firstStepInput))
   })
 })
