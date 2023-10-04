@@ -76,6 +76,13 @@ template Step(levels, nIns, nOuts, zeroLeaf) {
     signal input outPubkey[nOuts];
     signal input outBlinding[nOuts];
 
+    component stepInHasher = Poseidon(3);
+    stepInHasher.inputs[0] <== txRecordsMerkleRoot;
+    stepInHasher.inputs[1] <== allowedTxRecordsMerkleRoot;
+    stepInHasher.inputs[2] <== accInnocentCommitmentsMerkleRoot;
+
+    stepInHasher.out === step_in;
+
 
 
     // 1 - calculate txRecord

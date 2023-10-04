@@ -85,7 +85,7 @@ class TxRecord {
       inBlinding.push(this.inputs[i].blinding)
       inPathIndices.push(this.inputs[i].index)
       if (this.inputs[i].amount > 0) {
-        const curBlindedCommitment = poseidonHash([this.inputs[i].getCommitment(), this.inputs[i].index])
+        const curBlindedCommitment = toFixedHex(poseidonHash([this.inputs[i].getCommitment(), this.inputs[i].index]))
 
         const curAccInnocentIndex = accInnocentCommitmentsMerkleTree.indexOf(curBlindedCommitment)
         if (curAccInnocentIndex == -1) {
@@ -100,19 +100,18 @@ class TxRecord {
         accInnocentCommitmentsPathElements.push(new Array(accInnocentCommitmentsMerkleTree.levels).fill(0))
       }
     }
+    const accInnocentCommitmentsMerkleRoot = accInnocentCommitmentsMerkleTree.root()
     for (let j = 0; j < this.outputs.length; j++) {
       outputCommitment.push(this.outputs[j].getCommitment())
       outAmount.push(this.outputs[j].amount)
       outPubkey.push(this.outputs[j].keypair.pubkey)
       outBlinding.push(this.outputs[j].blinding)
+      accInnocentCommitmentsMerkleTree.insert(toFixedHex(poseidonHash([this.outputs[j].getCommitment(), this.outputs[j].index])))
     }
-    const accInnocentCommitmentsMerkleRoot = accInnocentCommitmentsMerkleTree.root()
-    accInnocentCommitmentsMerkleTree.insert('0x00')
-    const accInnocentOutputPathIndex = accInnocentCommitmentsMerkleTree.elements().length - 1
+    const accInnocentOutputPathIndex = parseInt((accInnocentCommitmentsMerkleTree.elements().length - 1)/2)
     const accInnocentOutputPathElements = accInnocentCommitmentsMerkleTree
-      .path(accInnocentOutputPathIndex)
+      .path(accInnocentOutputPathIndex*2)
       .pathElements.slice(1) // may be .slice(1)
-
     return {
       txRecordsPathElements: txRecordsPathElements,
       txRecordsPathIndex: txRecordsPathIndex,

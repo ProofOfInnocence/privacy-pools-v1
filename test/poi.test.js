@@ -16,6 +16,7 @@ const MerkleTree = require('fixed-merkle-tree')
 const { getUtxos, deposit, withdraw, balance, getTxRecordEvents } = require('../src/cli')
 const { proveInclusion, getPoiSteps, buildTxRecordMerkleTree, getTxRecord } = require('../src/poi')
 require('../src/txRecord')
+const fs = require('fs')
 
 const MERKLE_TREE_HEIGHT = 5
 const l1ChainId = 1
@@ -147,6 +148,10 @@ describe('ProofOfInnocence', function () {
     // const { proof, publicSignals } = await prove(firstStepInput, `./membership-proof/artifacts/circuits/proofOfInnocence`)
     // console.log(proof)
     // console.log(publicSignals)
-    console.log(JSON.stringify(ffjavascript.stringifyBigInts(firstStepInput), null, 2))
+    const path = './membership-proof/test/inputs.json';
+    // console.log(JSON.stringify(, null, 2))
+    const inputs = ffjavascript.stringifyBigInts(firstStepInput)
+    // write inputs to te path
+    fs.writeFileSync(path, JSON.stringify(inputs, null, 2))
   })
 })
