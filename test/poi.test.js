@@ -4,8 +4,7 @@ const { loadFixture } = waffle
 const { expect } = require('chai')
 const { utils } = ethers
 const { prove } = require('../src/prover')
-const { utils:ffjavascript } = require('ffjavascript')
-
+const { utils: ffjavascript } = require('ffjavascript')
 
 const Utxo = require('../src/utxo')
 const { transaction, registerAndTransact, prepareTransaction, buildMerkleTree } = require('../src/index')
@@ -14,7 +13,13 @@ const { Keypair } = require('../src/keypair')
 const MerkleTree = require('fixed-merkle-tree')
 
 const { getUtxos, deposit, withdraw, balance, getTxRecordEvents } = require('../src/cli')
-const { proveInclusion, getPoiSteps, buildTxRecordMerkleTree, getTxRecord } = require('../src/poi')
+const {
+  proveInclusion,
+  proveInclusionWithTxHash,
+  getPoiSteps,
+  buildTxRecordMerkleTree,
+  getTxRecord,
+} = require('../src/poi')
 require('../src/txRecord')
 const fs = require('fs')
 
@@ -55,52 +60,6 @@ describe('ProofOfInnocence', function () {
     return { tornadoPool, token, sender }
   }
 
-  it('should deposit and withdraw with single keypair', async function () {
-    const { tornadoPool } = await loadFixture(fixture)
-    const aliceDepositAmount1 = utils.parseEther('0.03')
-    const aliceDepositAmount2 = utils.parseEther('0.04')
-    const aliceWithdrawAmount = utils.parseEther('0.05')
-    const bobEthAddress = '0xDeaD00000000000000000000000000000000BEEf'
-
-    const aliceKeypair = new Keypair() // contains private and public keys
-
-    await deposit({
-      provider: ethers.provider,
-      tornadoPool,
-      keypair: aliceKeypair,
-      amount: aliceDepositAmount1,
-    })
-    expect(await balance({ provider: ethers.provider, tornadoPool, keypair: aliceKeypair })).to.be.equal(
-      aliceDepositAmount1,
-    )
-    await deposit({
-      provider: ethers.provider,
-      tornadoPool,
-      keypair: aliceKeypair,
-      amount: aliceDepositAmount2,
-    })
-    expect(await balance({ provider: ethers.provider, tornadoPool, keypair: aliceKeypair })).to.be.equal(
-      aliceDepositAmount1.add(aliceDepositAmount2),
-    )
-    const result = await withdraw({
-      provider: ethers.provider,
-      tornadoPool,
-      keypair: aliceKeypair,
-      amount: aliceWithdrawAmount,
-      recipient: bobEthAddress,
-    })
-    expect(await balance({ provider: ethers.provider, tornadoPool, keypair: aliceKeypair })).to.be.equal(
-      aliceDepositAmount1.add(aliceDepositAmount2).sub(aliceWithdrawAmount),
-    )
-    // console.log(result)
-    await proveInclusion({
-      provider: ethers.provider,
-      tornadoPool,
-      keypair: aliceKeypair,
-      txHash: result.transactionHash,
-    })
-  })
-
   it('should generate inputs for the steps of poi', async function () {
     const { tornadoPool } = await loadFixture(fixture)
     const aliceDepositAmount1 = utils.parseEther('0.03')
@@ -139,7 +98,7 @@ describe('ProofOfInnocence', function () {
       aliceDepositAmount1.add(aliceDepositAmount2).sub(aliceWithdrawAmount),
     )
 
-    let firstStepInput = await proveInclusion({
+    let firstStepInput = await proveInclusionWithTxHash({
       provider: ethers.provider,
       tornadoPool,
       keypair: aliceKeypair,
@@ -148,10 +107,48 @@ describe('ProofOfInnocence', function () {
     // const { proof, publicSignals } = await prove(firstStepInput, `./membership-proof/artifacts/circuits/proofOfInnocence`)
     // console.log(proof)
     // console.log(publicSignals)
-    const path = './membership-proof/test/inputs.json';
+    const path = './membership-proof/test/inputs.json'
     // console.log(JSON.stringify(, null, 2))
     const inputs = ffjavascript.stringifyBigInts(firstStepInput)
     // write inputs to te path
     fs.writeFileSync(path, JSON.stringify(inputs, null, 2))
+  })
+
+
+  it('should generate inputs before withdraw', async function () {
+    const { tornadoPool } = await loadFixture(fixture)
+    const aliceDepositAmount1 = utils.parseEther('0.03')
+    const aliceDepositAmount2 = utils.parseEther('0.04')
+    const aliceWithdrawAmount = utils.parseEther('0.05')
+    const bobEthAddress = '0xDeaD00000000000000000000000000000000BEEf'
+
+    const aliceKeypair = new Keypair() // contains private and public keys
+
+    await deposit({
+      provider: ethers.provider,
+      tornadoPool,
+      keypair: aliceKeypair,
+      amount: aliceDepositAmount1,
+    })
+    expect(await balance({ provider: ethers.provider, tornadoPool, keypair: aliceKeypair })).to.be.equal(
+      aliceDepositAmount1,
+    )
+    await deposit({
+      provider: ethers.provider,
+      tornadoPool,
+      keypair: aliceKeypair,
+      amount: aliceDepositAmount2,
+    })
+    expect(await balance({ provider: ethers.provider, tornadoPool, keypair: aliceKeypair })).to.be.equal(
+      aliceDepositAmount1.add(aliceDepositAmount2),
+    )
+    const result = await withdraw({
+      provider: ethers.provider,
+      tornadoPool,
+      keypair: aliceKeypair,
+      amount: aliceWithdrawAmount,
+      recipient: bobEthAddress,
+      allowlist: [bobEthAddress],
+    })
   })
 })

@@ -43,11 +43,17 @@ class TxRecord {
     allowedTxRecordsMerkleTree,
     accInnocentCommitmentsMerkleTree,
     isLastStep = false,
-    stepCount,
   }) {
     const txRecord = toFixedHex(this.hash())
-    const txRecordsPathIndex = txRecordsMerkleTree.indexOf(txRecord)
-    const txRecordsPathElements = txRecordsMerkleTree.path(txRecordsPathIndex).pathElements
+    let txRecordsPathIndex
+    let txRecordsPathElements
+    if (!isLastStep) {
+      txRecordsPathIndex = txRecordsMerkleTree.indexOf(txRecord)
+      txRecordsPathElements = txRecordsMerkleTree.path(txRecordsPathIndex).pathElements
+    } else {
+      txRecordsPathIndex = 0
+      txRecordsPathElements = new Array(txRecordsMerkleTree.levels).fill(0)
+    }
 
     isLastStep = isLastStep ? 1 : 0
     const step_in = poseidonHash([

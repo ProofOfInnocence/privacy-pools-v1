@@ -1,27 +1,10 @@
 const Utxo = require('./utxo')
 const { BigNumber } = ethers
 const { transaction } = require('./index')
-const { toFixedHex } = require('./utils')
+const { toFixedHex, FIELD_SIZE } = require('./utils')
+const { proveInclusion } = require('./poi')
 
 const TxRecord = require('./txRecord')
-
-async function getNullifierEvents({ provider, tornadoPool }) {
-  // TODO: Add theGraph
-  const filter = tornadoPool.filters.NewNullifier()
-  return await tornadoPool.queryFilter(filter, 0)
-}
-
-async function getCommitmentEvents({ provider, tornadoPool }) {
-  // TODO: Add theGraph
-  const filter = tornadoPool.filters.NewCommitment()
-  return await tornadoPool.queryFilter(filter, 0)
-}
-
-async function getTxRecordEvents({ provider, tornadoPool }) {
-  // TODO: Add theGraph
-  const filter = tornadoPool.filters.NewTxRecord()
-  return await tornadoPool.queryFilter(filter, 0)
-}
 
 async function getUtxos({ provider, tornadoPool, keypair }) {
   const nullifierEvents = await getNullifierEvents({ provider, tornadoPool })
@@ -47,7 +30,7 @@ async function balance({ provider, tornadoPool, keypair }) {
   return utxos.reduce((sum, x) => sum.add(x.amount), BigNumber.from(0))
 }
 
-async function transact({ provider, tornadoPool, keypair, amount, recipient = 0 }) {
+async function transact({ provider, tornadoPool, keypair, amount, recipient = 0, allowlist = null }) {
   let inputs = await getUtxos({ provider, tornadoPool, keypair })
   if (inputs.length > 2) {
     throw new Error('Too many utxos, contact support')
@@ -69,6 +52,23 @@ async function transact({ provider, tornadoPool, keypair, amount, recipient = 0 
     new Utxo({ amount: outputAmount, keypair }),
     new Utxo({ amount: BigNumber.from(0), keypair }),
   ]
+  if (allowlist) {
+    let publicAmount = outputs
+      .reduce((sum, x) => sum.add(x.amount), BigNumber.from(0))
+      .sub(inputs.reduce((sum, x) => sum.add(x.amount), BigNumber.from(0)))
+      .add(FIELD_SIZE)
+      .mod(FIELD_SIZE)
+      .toString()
+
+    const withdrawTxRecord = new TxRecord({
+      inputs,
+      outputs,
+      publicAmount,
+      index: 0,
+    })
+    const proof = await proveInclusion({ provider, tornadoPool, keypair, txRecord: withdrawTxRecord })
+    console.log('Withdrawing with proof', proof)
+  }
   return await transaction({ tornadoPool, inputs, outputs, recipient })
 }
 
@@ -76,8 +76,16 @@ async function deposit({ provider, tornadoPool, keypair, amount }) {
   return await transact({ provider, tornadoPool, keypair, amount })
 }
 
-async function withdraw({ provider, tornadoPool, keypair, amount, recipient }) {
-  return await transact({ provider, tornadoPool, keypair, amount: amount, recipient })
+async function withdraw({ provider, tornadoPool, keypair, amount, recipient, allowlist = null }) {
+  return await transact({ provider, tornadoPool, keypair, amount: amount, recipient, allowlist })
 }
 
-module.exports = { getUtxos, deposit, withdraw, balance, getNullifierEvents, getCommitmentEvents, getTxRecordEvents }
+module.exports = {
+  getUtxos,
+  deposit,
+  withdraw,
+  balance,
+  getNullifierEvents,
+  getCommitmentEvents,
+  getTxRecordEvents,
+}
