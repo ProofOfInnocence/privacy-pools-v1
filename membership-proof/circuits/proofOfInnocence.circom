@@ -1,5 +1,8 @@
-include "../node_modules/circomlib/circuits/poseidon.circom";
-include "../node_modules/circomlib/circuits/comparators.circom";
+pragma circom 2.0.6;
+
+
+include "../../node_modules/circomlib/circuits/poseidon.circom";
+include "../../node_modules/circomlib/circuits/comparators.circom";
 include "./merkleProof.circom";
 include "./merkleTreeUpdater.circom";
 include "./keypair.circom";
@@ -19,30 +22,30 @@ template IsNum2Bits(n) {
         e2 = e2+e2;
     }
 
-    component isEqual = IsEqual()
+    component isEqual = IsEqual();
     isEqual.in[0] <== lc1;
     isEqual.in[1] <== in;
     isLower <== isEqual.out;
 }
 
 // Transaction with 2 inputs and 2 outputs
-template ProofOfInnocence(levels, nIns, nOuts, zeroLeaf) {
+template Step(levels, nIns, nOuts, zeroLeaf) {
 
     // First MT: txRecordMT created by events
-    signal private input txRecordsPathElements[levels];
-    signal private input txRecordsPathIndex;
+    signal input txRecordsPathElements[levels];
+    signal input txRecordsPathIndex;
     // Second MT: allowedTxRecordMT given by the authorities
-    signal private input allowedTxRecordsPathElements[levels];
-    signal private input allowedTxRecordsPathIndex;
+    signal input allowedTxRecordsPathElements[levels];
+    signal input allowedTxRecordsPathIndex;
     // Third MT: accInnocentCommitmentMT created by the user
-    signal private input accInnocentCommitmentsPathElements[nIns][levels];
-    signal private input accInnocentCommitmentsPathIndex[nIns];
+    signal input accInnocentCommitmentsPathElements[nIns][levels];
+    signal input accInnocentCommitmentsPathIndex[nIns];
     //checks if last step is reached
-    signal private input isLastStep;
+    signal input isLastStep;
 
-    signal private input txRecordsMerkleRoot;
-    signal private input allowedTxRecordsMerkleRoot;
-    signal private input accInnocentCommitmentsMerkleRoot;
+    signal input txRecordsMerkleRoot;
+    signal input allowedTxRecordsMerkleRoot;
+    signal input accInnocentCommitmentsMerkleRoot;
     // step_in = Hash(txRecordsMerkleRoot, allowedTxRecordsMerkleRoot, accInnocentCommitmentMerkleRoot)
     signal input step_in;
     // step_out_0 = txRecordsMerkleRoot
@@ -51,27 +54,27 @@ template ProofOfInnocence(levels, nIns, nOuts, zeroLeaf) {
     // step_out = Hash(txRecordsMerkleRoot, allowedTxRecordsMerkleRoot, newAccInnocentCommitmentMerkleRoot)
     signal output step_out;
     // info belongs to outputCommitments helping writing them in accInnocentCommitmentMT
-    signal private input accInnocentOutputPathElements[levels - 1];
-    signal private input accInnocentOutputPathIndex;
+    signal input accInnocentOutputPathElements[levels - 1];
+    signal input accInnocentOutputPathIndex;
     // extAmount = external amount used for deposits and withdrawals
     // correct extAmount range is enforced on the smart contract
     // publicAmount = extAmount - fee
-    signal private input publicAmount;
+    signal input publicAmount;
     // outputsStartIndex = index of the first outputCommitment in the commitmentMT from the contract
-    signal private input outputsStartIndex;
+    signal input outputsStartIndex;
 
     // data for transaction inputs
-    signal private input inputNullifier[nIns];
-    signal private input inAmount[nIns];
-    signal private input inPrivateKey[nIns];
-    signal private input inBlinding[nIns];
-    signal private input inPathIndices[nIns];
+    signal input inputNullifier[nIns];
+    signal input inAmount[nIns];
+    signal input inPrivateKey[nIns];
+    signal input inBlinding[nIns];
+    signal input inPathIndices[nIns];
 
     // data for transaction outputs
-    signal private input outputCommitment[nOuts];
-    signal private input outAmount[nOuts];
-    signal private input outPubkey[nOuts];
-    signal private input outBlinding[nOuts];
+    signal input outputCommitment[nOuts];
+    signal input outAmount[nOuts];
+    signal input outPubkey[nOuts];
+    signal input outBlinding[nOuts];
 
 
 
@@ -111,7 +114,7 @@ template ProofOfInnocence(levels, nIns, nOuts, zeroLeaf) {
     isDeposit.in <== publicAmount;
     checkAllowlistRoot.enabled <== isDeposit.isLower;
 
-    // TODO: remove keypair calculation
+    // // TODO: remove keypair calculation
     component inKeypair[nIns];
     component inSignature[nIns];
     component inCommitmentHasher[nIns];
@@ -205,4 +208,4 @@ template ProofOfInnocence(levels, nIns, nOuts, zeroLeaf) {
 
 // zeroLeaf = Poseidon(zero, zero)
 // default `zero` value is keccak256("tornado") % FIELD_SIZE = 21663839004416932945382355908790599225266501822907911457504978515578255421292
-component main = ProofOfInnocence(23, 2, 2, 11850551329423159860688778991827824730037759162201783566284850822760196767874);
+component main{public [step_in]} = Step(5, 2, 2, 11850551329423159860688778991827824730037759162201783566284850822760196767874);

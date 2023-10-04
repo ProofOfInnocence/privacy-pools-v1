@@ -1,0 +1,14 @@
+{
+  "name": "membership-proof",
+  "version": "1.0.0",
+  "main": "index.js",
+  "license": "MIT",
+  "scripts": {
+    "test": "mocha --exit --timeout 30000 test/circuit.test.js"
+  },
+  "devDependencies": {
+    "circom_tester": "0.0.19",
+    "mocha": "^9.2.0",
+    "patch-package": "^8.0.0"
+  }
+}

@@ -4,6 +4,8 @@ const { loadFixture } = waffle
 const { expect } = require('chai')
 const { utils } = ethers
 const { prove } = require('../src/prover')
+const { utils:ffjavascript } = require('ffjavascript')
+
 
 const Utxo = require('../src/utxo')
 const { transaction, registerAndTransact, prepareTransaction, buildMerkleTree } = require('../src/index')
@@ -142,9 +144,9 @@ describe('ProofOfInnocence', function () {
       keypair: aliceKeypair,
       txHash: result.transactionHash,
     })
-    const { proof, publicSignals } = await prove(firstStepInput, `./artifacts/circuits/proofOfInnocence`)
-    console.log(proof)
-    console.log(publicSignals)
-    console.log(JSON.stringify(firstStepInput))
+    // const { proof, publicSignals } = await prove(firstStepInput, `./membership-proof/artifacts/circuits/proofOfInnocence`)
+    // console.log(proof)
+    // console.log(publicSignals)
+    console.log(JSON.stringify(ffjavascript.stringifyBigInts(firstStepInput), null, 2))
   })
 })

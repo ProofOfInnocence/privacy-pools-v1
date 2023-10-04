@@ -103,7 +103,7 @@ class TxRecord {
     for (let j = 0; j < this.outputs.length; j++) {
       outputCommitment.push(this.outputs[j].getCommitment())
       outAmount.push(this.outputs[j].amount)
-      outPubkey.push(this.outputs[j].keypair.privkey)
+      outPubkey.push(this.outputs[j].keypair.pubkey)
       outBlinding.push(this.outputs[j].blinding)
     }
     const accInnocentCommitmentsMerkleRoot = accInnocentCommitmentsMerkleTree.root()
