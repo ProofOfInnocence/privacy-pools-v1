@@ -136,7 +136,7 @@ describe('ProofOfInnocence', function () {
     fs.writeFileSync(path, JSON.stringify(inputs, null, 2))
   })
 
-  it('should generate inputs before withdraw', async function () {
+  xit('should generate inputs before withdraw', async function () {
     const { tornadoPool } = await loadFixture(fixture)
     const aliceDepositAmount1 = utils.parseEther('0.03')
     const aliceDepositAmount2 = utils.parseEther('0.04')

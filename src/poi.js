@@ -4,6 +4,7 @@ const TxRecord = require('./txRecord')
 const MerkleTree = require('fixed-merkle-tree')
 
 const MERKLE_TREE_HEIGHT = 5
+const ZERO_VALUE = BigInt(21663839004416932945382355908790599225266501822907911457504978515578255421292)
 const { getNullifierEvents, getCommitmentEvents, getTxRecordEvents } = require('./events.js')
 
 async function getTxRecord({ provider, tornadoPool, txHash }) {
@@ -45,7 +46,14 @@ async function getMappings({ provider, tornadoPool, keypair }) {
   return { nullifierToUtxo, commitmentToUtxo }
 }
 
-async function getPoiSteps({ provider, tornadoPool, keypair, nullifierToUtxo, commitmentToUtxo, finalTxRecord }) {
+async function getPoiSteps({
+  provider,
+  tornadoPool,
+  keypair,
+  nullifierToUtxo,
+  commitmentToUtxo,
+  finalTxRecord,
+}) {
   const txRecordEvents = await getTxRecordEvents({ provider, tornadoPool })
   let txRecords = []
   for (const event of txRecordEvents) {
@@ -85,7 +93,7 @@ async function getPoiSteps({ provider, tornadoPool, keypair, nullifierToUtxo, co
     todoProve.add(toFixedHex(finalTxRecord.inputs[1].getCommitment()))
   }
 
-  txRecords = txRecords.filter((x) => x.index < finalTxRecord.index ? finalTxRecord.index: x.index + 1)
+  txRecords = txRecords.filter((x) => (x.index < finalTxRecord.index ? finalTxRecord.index : x.index + 1))
   txRecords.sort((a, b) => b.index - a.index)
 
   for (const txRecord of txRecords) {
@@ -175,19 +183,24 @@ async function proveInclusion({
     commitmentToUtxo,
     finalTxRecord,
   })
+  for(let i = 0; i < steps.length; i++){
+    console.log("Step", i)
+    console.log("Inputs:", steps[i].inputs)
+    console.log("Outputs:", steps[i].outputs)
+    console.log("_______________")
+  }
   const txRecordsMerkleTree = buildTxRecordMerkleTree({ events: txRecordEvents })
   const allowedTxRecordsMerkleTree = buildTxRecordMerkleTree({ events: txRecordEvents })
-  let accInnocentCommitmentsMerkleTree = new MerkleTree(MERKLE_TREE_HEIGHT, [], {
-    hashFunction: poseidonHash2,
-  })
+  let accInnocentCommitments = [ZERO_VALUE, ZERO_VALUE]
   let inputs = []
   for (let i = 0; i < steps.length; i++) {
-    const stepInputs = steps[i].generateInputs({
+    const { stepInputs, outputInnocentCommitments } = steps[i].generateInputs({
       txRecordsMerkleTree,
       allowedTxRecordsMerkleTree: allowedTxRecordsMerkleTree,
-      accInnocentCommitmentsMerkleTree: accInnocentCommitmentsMerkleTree,
+      accInnocentCommitments,
       isLastStep: i == steps.length - 1,
     })
+    accInnocentCommitments = outputInnocentCommitments
     inputs.push(stepInputs)
   }
   return inputs

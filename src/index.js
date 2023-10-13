@@ -17,8 +17,8 @@ async function buildMerkleTree({ tornadoPool }) {
 }
 
 async function getProof({ inputs, outputs, tree, extAmount, fee, recipient, relayer }) {
-  inputs = shuffle(inputs)
-  outputs = shuffle(outputs)
+  // inputs = shuffle(inputs)
+  // outputs = shuffle(outputs)
 
   let inputMerklePathIndices = []
   let inputMerklePathElements = []

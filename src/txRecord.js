@@ -1,4 +1,4 @@
-const { poseidonHash, toFixedHex } = require('./utils')
+const { poseidonHash, toFixedHex, poseidonHash2 } = require('./utils')
 
 class TxRecord {
   constructor({ inputs = [], outputs = [], publicAmount = 0, index = 0 }) {
@@ -41,7 +41,7 @@ class TxRecord {
   generateInputs({
     txRecordsMerkleTree,
     allowedTxRecordsMerkleTree,
-    accInnocentCommitmentsMerkleTree,
+    accInnocentCommitments,
     isLastStep = false,
   }) {
     const txRecord = toFixedHex(this.hash())
@@ -59,7 +59,7 @@ class TxRecord {
     const step_in = poseidonHash([
       txRecordsMerkleTree.root(),
       allowedTxRecordsMerkleTree.root(),
-      accInnocentCommitmentsMerkleTree.root(),
+      poseidonHash2(accInnocentCommitments[0], accInnocentCommitments[1]),
     ])
 
     let allowedTxRecordsPathIndex = null
@@ -85,8 +85,8 @@ class TxRecord {
     let outAmount = []
     let outPubkey = []
     let outBlinding = []
-    let accInnocentCommitmentsPathElements = []
-    let accInnocentCommitmentsPathIndex = []
+    // let accInnocentCommitmentsPathElements = []
+    // let accInnocentCommitmentsPathIndex = []
 
     for (let i = 0; i < this.inputs.length; i++) {
       inPrivateKey.push(this.inputs[i].keypair.privkey)
@@ -94,67 +94,59 @@ class TxRecord {
       inAmount.push(this.inputs[i].amount)
       inBlinding.push(this.inputs[i].blinding)
       inPathIndices.push(this.inputs[i].index)
-      if (this.inputs[i].amount > 0) {
-        const curBlindedCommitment = toFixedHex(
-          poseidonHash([this.inputs[i].getCommitment(), this.inputs[i].index]),
-        )
+      // if (this.inputs[i].amount > 0) {
+      //   const curBlindedCommitment = toFixedHex(
+      //     poseidonHash([this.inputs[i].getCommitment(), this.inputs[i].index]),
+      //   )
 
-        const curAccInnocentIndex = accInnocentCommitmentsMerkleTree.indexOf(curBlindedCommitment)
-        if (curAccInnocentIndex == -1) {
-          throw new Error('Blinded commitment not found in accInnocentCommitmentsMerkleTree')
-        }
-        accInnocentCommitmentsPathIndex.push(curAccInnocentIndex)
-        accInnocentCommitmentsPathElements.push(
-          accInnocentCommitmentsMerkleTree.path(curAccInnocentIndex).pathElements,
-        )
-      } else {
-        accInnocentCommitmentsPathIndex.push(0)
-        accInnocentCommitmentsPathElements.push(new Array(accInnocentCommitmentsMerkleTree.levels).fill(0))
-      }
+      //   const curAccInnocentIndex = accInnocentCommitmentsMerkleTree.indexOf(curBlindedCommitment)
+      //   if (curAccInnocentIndex == -1) {
+      //     throw new Error('Blinded commitment not found in accInnocentCommitmentsMerkleTree')
+      //   }
+      //   accInnocentCommitmentsPathIndex.push(curAccInnocentIndex)
+      //   accInnocentCommitmentsPathElements.push(
+      //     accInnocentCommitmentsMerkleTree.path(curAccInnocentIndex).pathElements,
+      //   )
+      // } else {
+      //   accInnocentCommitmentsPathIndex.push(0)
+      //   accInnocentCommitmentsPathElements.push(new Array(accInnocentCommitmentsMerkleTree.levels).fill(0))
+      // }
     }
-    const accInnocentCommitmentsMerkleRoot = accInnocentCommitmentsMerkleTree.root()
+    let outputInnocentCommitments = []
     for (let j = 0; j < this.outputs.length; j++) {
       outputCommitment.push(this.outputs[j].getCommitment())
       outAmount.push(this.outputs[j].amount)
       outPubkey.push(this.outputs[j].keypair.pubkey)
       outBlinding.push(this.outputs[j].blinding)
-      if (!isLastStep) {
-        accInnocentCommitmentsMerkleTree.insert(
-          toFixedHex(poseidonHash([this.outputs[j].getCommitment(), this.outputs[j].index])),
-        )
-      } else {
-        accInnocentCommitmentsMerkleTree.insert('0x00')
-      }
+      // console.log(this)
+      outputInnocentCommitments.push(
+        poseidonHash([this.outputs[j].getCommitment(), isLastStep ? 0 : this.outputs[j].index]),
+      )
     }
-    const accInnocentOutputPathIndex = parseInt((accInnocentCommitmentsMerkleTree.elements().length - 1) / 2)
-    const accInnocentOutputPathElements = accInnocentCommitmentsMerkleTree
-      .path(accInnocentOutputPathIndex * 2)
-      .pathElements.slice(1) // may be .slice(1)
     return {
-      txRecordsPathElements: txRecordsPathElements,
-      txRecordsPathIndex: txRecordsPathIndex,
-      allowedTxRecordsPathElements: allowedTxRecordsPathElements,
-      allowedTxRecordsPathIndex: allowedTxRecordsPathIndex,
-      accInnocentCommitmentsPathElements: accInnocentCommitmentsPathElements,
-      accInnocentCommitmentsPathIndex: accInnocentCommitmentsPathIndex,
-      isLastStep: isLastStep,
-      txRecordsMerkleRoot: txRecordsMerkleTree.root(),
-      allowedTxRecordsMerkleRoot: allowedTxRecordsMerkleTree.root(),
-      accInnocentCommitmentsMerkleRoot: accInnocentCommitmentsMerkleRoot,
-      step_in: step_in,
-      accInnocentOutputPathElements: accInnocentOutputPathElements,
-      accInnocentOutputPathIndex: accInnocentOutputPathIndex,
-      publicAmount: this.publicAmount,
-      outputsStartIndex: this.index,
-      inputNullifier: inputNullifier,
-      inAmount: inAmount,
-      inPrivateKey: inPrivateKey,
-      inBlinding: inBlinding,
-      inPathIndices: inPathIndices,
-      outputCommitment: outputCommitment,
-      outAmount: outAmount,
-      outPubkey: outPubkey,
-      outBlinding: outBlinding,
+      stepInputs: {
+        txRecordsPathElements: txRecordsPathElements,
+        txRecordsPathIndex: txRecordsPathIndex,
+        allowedTxRecordsPathElements: allowedTxRecordsPathElements,
+        allowedTxRecordsPathIndex: allowedTxRecordsPathIndex,
+        accInnocentCommitments,
+        isLastStep: isLastStep,
+        txRecordsMerkleRoot: txRecordsMerkleTree.root(),
+        allowedTxRecordsMerkleRoot: allowedTxRecordsMerkleTree.root(),
+        step_in: step_in,
+        publicAmount: this.publicAmount,
+        outputsStartIndex: this.index,
+        inputNullifier: inputNullifier,
+        inAmount: inAmount,
+        inPrivateKey: inPrivateKey,
+        inBlinding: inBlinding,
+        inPathIndices: inPathIndices,
+        outputCommitment: outputCommitment,
+        outAmount: outAmount,
+        outPubkey: outPubkey,
+        outBlinding: outBlinding,
+      },
+      outputInnocentCommitments,
     }
   }
 }
