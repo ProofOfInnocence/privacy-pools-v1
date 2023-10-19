@@ -79,9 +79,9 @@ async function transact({ provider, tornadoPool, keypair, amount, recipient = 0,
       index: 0,
     })
     const proof = await proveInclusion({ provider, tornadoPool, keypair, finalTxRecord: withdrawTxRecord })
-    console.log('Withdrawing with proof', proof)
+    // console.log('Withdrawing with proof', proof)
   }
-  return await transaction({ tornadoPool, inputs, outputs, recipient })
+  return await transaction({ tornadoPool, inputs, outputs, recipient, membershipProofURI: "" })
 }
 
 async function deposit({ provider, tornadoPool, keypair, amount }) {

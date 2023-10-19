@@ -26,6 +26,7 @@ contract PrivacyPool is MerkleTreeWithHistory, ReentrancyGuard {
     uint256 fee;
     bytes encryptedOutput1;
     bytes encryptedOutput2;
+    string membershipProofURI;
   }
 
   struct Proof {
@@ -40,6 +41,7 @@ contract PrivacyPool is MerkleTreeWithHistory, ReentrancyGuard {
   event NewCommitment(bytes32 commitment, uint256 index, bytes encryptedOutput);
   event NewNullifier(bytes32 nullifier);
   event NewTxRecord(bytes32 inputNullifier1, bytes32 inputNullifier2, bytes32 outputCommitment1, bytes32 outputCommitment2, uint256 publicAmount, uint32 index);
+  event NewWithdrawal(address recipient, uint256 amount, string membershipProofURI);
 
   /**
     @dev The constructor
@@ -122,6 +124,7 @@ contract PrivacyPool is MerkleTreeWithHistory, ReentrancyGuard {
     if (_extData.extAmount < 0) {
       require(_extData.recipient != address(0), "Can't withdraw to zero address");
       token.transfer(_extData.recipient, uint256(-_extData.extAmount));
+      emit NewWithdrawal(_extData.recipient, uint256(-_extData.extAmount), _extData.membershipProofURI);
     }
     if (_extData.fee > 0) {
       token.transfer(_extData.relayer, _extData.fee);
