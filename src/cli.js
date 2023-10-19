@@ -5,11 +5,9 @@ const { toFixedHex, FIELD_SIZE } = require('./utils')
 const { proveInclusion } = require('./poi')
 
 const TxRecord = require('./txRecord')
-const {
-  getNullifierEvents,
-  getCommitmentEvents,
-  getTxRecordEvents,
-} = require('./events.js')
+const { getNullifierEvents, getCommitmentEvents, getTxRecordEvents } = require('./events.js')
+
+const DEFAULT_ZERO = '21663839004416932945382355908790599225266501822907911457504978515578255421292'
 
 async function getUtxos({ provider, tornadoPool, keypair }) {
   const nullifierEvents = await getNullifierEvents({ provider, tornadoPool })
@@ -40,9 +38,7 @@ async function transact({ provider, tornadoPool, keypair, amount, recipient = 0,
   if (inputs.length > 2) {
     throw new Error('Too many utxos, contact support')
   }
-  while (inputs.length < 2) {
-    inputs.push(new Utxo({ amount: BigNumber.from(0), keypair }))
-  }
+
   const inputAmount = inputs.reduce((sum, x) => sum.add(x.amount), BigNumber.from(0))
   let outputAmount
   if (recipient == 0) {
@@ -57,6 +53,17 @@ async function transact({ provider, tornadoPool, keypair, amount, recipient = 0,
     new Utxo({ amount: outputAmount, keypair }),
     new Utxo({ amount: BigNumber.from(0), keypair }),
   ]
+  while (inputs.length < 2) {
+    const newBlinding = BigNumber.from(
+      '0x' +
+        ethers.utils
+          .keccak256(ethers.utils.concat([BigNumber.from(DEFAULT_ZERO), outputs[inputs.length].blinding]))
+          .slice(2, 64),
+    ).mod(FIELD_SIZE)
+    // console.log('Output blinding:', outputs[inputs.length].blinding)
+    // console.log('New blinding:', newBlinding)
+    inputs.push(new Utxo({ amount: BigNumber.from(0), keypair, blinding: newBlinding }))
+  }
   if (allowlist) {
     let publicAmount = outputs
       .reduce((sum, x) => sum.add(x.amount), BigNumber.from(0))
@@ -89,5 +96,5 @@ module.exports = {
   getUtxos,
   deposit,
   withdraw,
-  balance
+  balance,
 }

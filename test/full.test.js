@@ -12,10 +12,9 @@ const { Keypair } = require('../src/keypair')
 const { getUtxos, deposit, withdraw, balance } = require('../src/cli')
 
 const MERKLE_TREE_HEIGHT = 5
-const l1ChainId = 1
 const MAXIMUM_DEPOSIT_AMOUNT = utils.parseEther(process.env.MAXIMUM_DEPOSIT_AMOUNT || '1')
 
-describe('TornadoPool', function () {
+describe('Privacy Pool', function () {
   this.timeout(20000)
 
   async function deploy(contractName, ...args) {
@@ -26,34 +25,14 @@ describe('TornadoPool', function () {
 
   async function fixture() {
     require('../scripts/compileHasher')
-    const [sender ] = await ethers.getSigners()
+    const [ sender ] = await ethers.getSigners()
     const verifier2 = await deploy('Verifier2')
-    // const verifier16 = await deploy('Verifier16')
     const hasher = await deploy('Hasher')
-
-    // const token = await deploy('PermittableToken', 'Wrapped ETH', 'WETH', 18, l1ChainId)
-    // await token.mint(sender.address, utils.parseEther('10000'))
-
     const token = await deploy('WETH', 'Wrapped ETH', 'WETH')
     await token.deposit({ value: utils.parseEther('3') })
 
-    // const amb = await deploy('MockAMB', gov.address, l1ChainId)
-    // const omniBridge = await deploy('MockOmniBridge', amb.address)
-
-    // // deploy L1Unwrapper with CREATE2
-    // const singletonFactory = await ethers.getContractAt('SingletonFactory', config.singletonFactory)
-
-    // let customConfig = Object.assign({}, config)
-    // customConfig.omniBridge = omniBridge.address
-    // customConfig.weth = l1Token.address
-    // customConfig.multisig = multisig.address
-    // const contracts = await generate(customConfig)
-    // await singletonFactory.deploy(contracts.unwrapperContract.bytecode, config.salt)
-    // const l1Unwrapper = await ethers.getContractAt('L1Unwrapper', contracts.unwrapperContract.address)
-
-    /** @type {TornadoPool} */
     const tornadoPool = await deploy(
-      'TornadoPool',
+      'PrivacyPool',
       verifier2.address,
       MERKLE_TREE_HEIGHT,
       hasher.address,
@@ -61,17 +40,6 @@ describe('TornadoPool', function () {
       MAXIMUM_DEPOSIT_AMOUNT
     )
 
-    // const { data } = await tornadoPoolImpl.populateTransaction.initialize(MAXIMUM_DEPOSIT_AMOUNT)
-    // const proxy = await deploy(
-    //   'CrossChainUpgradeableProxy',
-    //   tornadoPoolImpl.address,
-    //   gov.address,
-    //   data,
-    //   amb.address,
-    //   l1ChainId,
-    // )
-
-    // const tornadoPool = tornadoPoolImpl.attach(proxy.address)
 
     await token.approve(tornadoPool.address, utils.parseEther('10000'))
 
@@ -95,55 +63,6 @@ describe('TornadoPool', function () {
     const fieldSize = await tornadoPool.FIELD_SIZE()
 
     expect(maxExtAmount.add(maxFee)).to.be.lt(fieldSize)
-  })
-
-  it('should register and deposit', async function () {
-    let { tornadoPool } = await loadFixture(fixture)
-    const sender = (await ethers.getSigners())[0]
-
-    // Alice deposits into tornado pool
-    const aliceDepositAmount = 1e7
-    const aliceDepositUtxo = new Utxo({ amount: aliceDepositAmount })
-
-
-    tornadoPool = tornadoPool.connect(sender)
-    await registerAndTransact({
-      tornadoPool,
-      outputs: [aliceDepositUtxo],
-      account: {
-        owner: sender.address,
-        publicKey: aliceDepositUtxo.keypair.address(),
-      },
-    })
-
-    const filter = tornadoPool.filters.NewCommitment()
-    const fromBlock = await ethers.provider.getBlock()
-    const events = await tornadoPool.queryFilter(filter, fromBlock.number)
-
-    let aliceReceiveUtxo
-    try {
-      aliceReceiveUtxo = Utxo.decrypt(
-        aliceDepositUtxo.keypair,
-        events[0].args.encryptedOutput,
-        events[0].args.index,
-      )
-    } catch (e) {
-      // we try to decrypt another output here because it shuffles outputs before sending to blockchain
-      aliceReceiveUtxo = Utxo.decrypt(
-        aliceDepositUtxo.keypair,
-        events[1].args.encryptedOutput,
-        events[1].args.index,
-      )
-    }
-    expect(aliceReceiveUtxo.amount).to.be.equal(aliceDepositAmount)
-
-    const filterRegister = tornadoPool.filters.PublicKey(sender.address)
-    const filterFromBlock = await ethers.provider.getBlock()
-    const registerEvents = await tornadoPool.queryFilter(filterRegister, filterFromBlock.number)
-
-    const [registerEvent] = registerEvents.sort((a, b) => a.blockNumber - b.blockNumber).slice(-1)
-
-    expect(registerEvent.args.key).to.be.equal(aliceDepositUtxo.keypair.address())
   })
 
   it('should deposit, transact and withdraw', async function () {
@@ -195,35 +114,6 @@ describe('TornadoPool', function () {
     expect(bobBalance).to.be.equal(bobWithdrawAmount)
   })
   
-
-
-  it('should revert if onTransact called directly', async () => {
-    const { tornadoPool } = await loadFixture(fixture)
-    const aliceKeypair = new Keypair() // contains private and public keys
-
-    // Alice deposits into tornado pool
-    const aliceDepositAmount = utils.parseEther('0.07')
-    const aliceDepositUtxo = new Utxo({ amount: aliceDepositAmount, keypair: aliceKeypair })
-    const { args, extData } = await prepareTransaction({
-      tornadoPool,
-      outputs: [aliceDepositUtxo],
-    })
-
-    await expect(tornadoPool.onTransact(args, extData)).to.be.revertedWith(
-      'can be called only from onTokenBridged',
-    )
-  })
-
-  // it('should work with 16 inputs', async function () {
-  //   const { tornadoPool } = await loadFixture(fixture)
-  //   const aliceDepositAmount = utils.parseEther('0.07')
-  //   const aliceDepositUtxo = new Utxo({ amount: aliceDepositAmount })
-  //   await transaction({
-  //     tornadoPool,
-  //     inputs: [new Utxo(), new Utxo(), new Utxo()],
-  //     outputs: [aliceDepositUtxo],
-  //   })
-  // })
 
   it('should be compliant', async function () {
     // basically verifier should check if a commitment and a nullifier hash are on chain
