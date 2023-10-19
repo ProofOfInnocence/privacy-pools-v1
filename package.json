@@ -7,14 +7,12 @@
     "test": "test"
   },
   "scripts": {
-    "circuit": "./scripts/buildCircuit.sh 2 && ./scripts/buildCircuit.sh 16",
-    "circuit:poi": "./scripts/buildPoi.sh",
-    "circuit_prod": "rm -rf ./artifacts/circuits && yarn changeTreeHeight 23 && ./scripts/buildCircuit_prod.sh 2 && ./scripts/buildCircuit_prod.sh 16 && tar -czvf artifacts/circuits.tar.gz artifacts/circuits",
-    "changeTreeHeight": "./scripts/changeTreeHeight.sh",
+    "circuit": "./scripts/buildCircuit.sh 2",
+    "circuit_prod": "rm -rf ./artifacts/circuits && ./scripts/buildCircuit_prod.sh 2",
     "compile:hasher": "npx hardhat hasher",
     "compile": "npx hardhat compile && yarn compile:hasher",
     "build": "npm run circuit && npm run compile",
-    "deploy": "npx hardhat run scripts/deploy.js --network optimism",
+    "deploy": "yarn circuit_prod && npx hardhat run scripts/deployPrivacyPool.js --network goerli",
     "test": "npx hardhat test",
     "test-poi": "npx hardhat test test/poi.test.js",
     "eslint": "eslint --ext .js --ignore-path .gitignore .",

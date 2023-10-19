@@ -7,7 +7,15 @@ const { MAXIMUM_DEPOSIT_AMOUNT } = process.env
 
 async function main() {
   require('./compileHasher')
-  const token = '0xCa8d20f3e0144a72C6B5d576e9Bd3Fd8557E2B04' // WBNB
+
+  const chainId = await ethers.provider.getNetwork().then(n => n.chainId);
+  console.log('chainId: ', chainId)
+  if(chainId !== 5){
+    console.log('Please switch to goerli network')
+    return;
+  }
+
+  const token = '0xB4FBF271143F4FBf7B91A5ded31805e42b2208d6' // WETH on goerli
 
   const Verifier2 = await ethers.getContractFactory('Verifier2')
   const verifier2 = await Verifier2.deploy()
@@ -28,7 +36,7 @@ async function main() {
       MERKLE_TREE_HEIGHT,
       hasher.address,
       token,
-      l1ChainId,
+      MAXIMUM_DEPOSIT_AMOUNT,
     ]).slice(1, -1)}\n`,
   )
   /**
@@ -43,10 +51,10 @@ async function main() {
     MERKLE_TREE_HEIGHT,
     hasher.address,
     token,
-    MAXIMUM_DEPOSIT_AMOUNT
+    MAXIMUM_DEPOSIT_AMOUNT,
   )
 
-
+  console.log(`Privacy Pool Deployed at: ${privacyPool.address}`)
 }
 
 main()
