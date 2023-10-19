@@ -36,7 +36,7 @@ async function main() {
       MERKLE_TREE_HEIGHT,
       hasher.address,
       token,
-      MAXIMUM_DEPOSIT_AMOUNT,
+      utils.parseEther(MAXIMUM_DEPOSIT_AMOUNT),
     ]).slice(1, -1)}\n`,
   )
   /**
@@ -51,7 +51,7 @@ async function main() {
     MERKLE_TREE_HEIGHT,
     hasher.address,
     token,
-    MAXIMUM_DEPOSIT_AMOUNT,
+    utils.parseEther(MAXIMUM_DEPOSIT_AMOUNT),
   )
 
   console.log(`Privacy Pool Deployed at: ${privacyPool.address}`)
