@@ -16,7 +16,7 @@ async function buildMerkleTree({ tornadoPool }) {
   return new MerkleTree(MERKLE_TREE_HEIGHT, leaves, { hashFunction: poseidonHash2 })
 }
 
-async function getProof({ inputs, outputs, tree, extAmount, fee, recipient, relayer }) {
+async function getProof({ inputs, outputs, tree, extAmount, fee, recipient, relayer, membershipProofURI }) {
   // inputs = shuffle(inputs)
   // outputs = shuffle(outputs)
 
@@ -44,8 +44,7 @@ async function getProof({ inputs, outputs, tree, extAmount, fee, recipient, rela
     fee: toFixedHex(fee),
     encryptedOutput1: outputs[0].encrypt(),
     encryptedOutput2: outputs[1].encrypt(),
-    encryptedInput1: inputs[0].encrypt(),
-    encryptedInput2: inputs[1].encrypt(),
+    membershipProofURI
   }
 
   const extDataHash = getExtDataHash(extData)
@@ -93,6 +92,7 @@ async function prepareTransaction({
   fee = 0,
   recipient = 0,
   relayer = 0,
+  membershipProofURI = '',
 }) {
   if (inputs.length > 16 || outputs.length > 2) {
     throw new Error('Incorrect inputs/outputs count')
@@ -116,6 +116,7 @@ async function prepareTransaction({
     fee,
     recipient,
     relayer,
+    membershipProofURI,
   })
 
   return {
