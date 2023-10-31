@@ -40,7 +40,14 @@ contract PrivacyPool is MerkleTreeWithHistory, ReentrancyGuard {
 
   event NewCommitment(bytes32 commitment, uint256 index, bytes encryptedOutput);
   event NewNullifier(bytes32 nullifier);
-  event NewTxRecord(bytes32 inputNullifier1, bytes32 inputNullifier2, bytes32 outputCommitment1, bytes32 outputCommitment2, uint256 publicAmount, uint32 index);
+  event NewTxRecord(
+    bytes32 inputNullifier1,
+    bytes32 inputNullifier2,
+    bytes32 outputCommitment1,
+    bytes32 outputCommitment2,
+    uint256 publicAmount,
+    uint32 index
+  );
   event NewWithdrawal(address recipient, uint256 amount, string membershipProofURI);
 
   /**
@@ -56,9 +63,7 @@ contract PrivacyPool is MerkleTreeWithHistory, ReentrancyGuard {
     address _hasher,
     IERC20 _token,
     uint256 _maximumDepositAmount
-  )
-    MerkleTreeWithHistory(_levels, _hasher)
-  {
+  ) MerkleTreeWithHistory(_levels, _hasher) {
     verifier2 = _verifier2;
     token = _token;
     maximumDepositAmount = _maximumDepositAmount;
