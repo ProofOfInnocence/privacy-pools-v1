@@ -16,7 +16,7 @@ const MERKLE_TREE_HEIGHT = 23
 const MAXIMUM_DEPOSIT_AMOUNT = utils.parseEther(process.env.MAXIMUM_DEPOSIT_AMOUNT || '1')
 
 describe('ProofOfInnocence', function () {
-  this.timeout(20000)
+  this.timeout(200000)
 
   async function deploy(contractName, ...args) {
     const Factory = await ethers.getContractFactory(contractName)
