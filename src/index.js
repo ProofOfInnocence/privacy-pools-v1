@@ -2,7 +2,7 @@
 const MerkleTree = require('fixed-merkle-tree')
 const { ethers } = require('hardhat')
 const { BigNumber } = ethers
-const { toFixedHex, poseidonHash2, getExtDataHash, FIELD_SIZE, shuffle } = require('./utils')
+const { toFixedHex, poseidonHash2, getExtDataHash, FIELD_SIZE } = require('./utils')
 const Utxo = require('./utxo')
 
 const { prove } = require('./prover')
@@ -44,7 +44,7 @@ async function getProof({ inputs, outputs, tree, extAmount, fee, recipient, rela
     fee: toFixedHex(fee),
     encryptedOutput1: outputs[0].encrypt(),
     encryptedOutput2: outputs[1].encrypt(),
-    membershipProofURI
+    membershipProofURI,
   }
 
   const extDataHash = getExtDataHash(extData)

@@ -2,24 +2,54 @@ const Utxo = require('./utxo')
 const { toFixedHex, poseidonHash2, FIELD_SIZE } = require('./utils')
 const TxRecord = require('./txRecord')
 const MerkleTree = require('fixed-merkle-tree')
+const { ethers } = require('hardhat')
 const { BigNumber } = ethers
 
 const MERKLE_TREE_HEIGHT = 23
-const ZERO_VALUE = BigInt(21663839004416932945382355908790599225266501822907911457504978515578255421292)
+const ZERO_VALUE = BigNumber.from(
+  '21663839004416932945382355908790599225266501822907911457504978515578255421292',
+)
 const DEFAULT_ZERO = '21663839004416932945382355908790599225266501822907911457504978515578255421292'
 
-const { getNullifierEvents, getCommitmentEvents, getTxRecordEvents } = require('./events.js')
+const { getCommitmentEvents, getTxRecordEvents } = require('./events.js')
 
-async function getTxRecord({ provider, tornadoPool, txHash }) {
-  const receipt = await provider.getTransactionReceipt(txHash)
+async function getTxRecord({ tornadoPool, txHash }) {
+  const receipt = await tornadoPool.provider.getTransactionReceipt(txHash)
   const NewTxRecordTopic = tornadoPool.filters.NewTxRecord().topics[0]
   const event = receipt.logs.find((log) => log.topics[0] === NewTxRecordTopic)
   const txRecord = tornadoPool.interface.parseLog(event)
   return txRecord
 }
 
-async function getMappings({ provider, tornadoPool, keypair }) {
-  const commitmentEvents = await getCommitmentEvents({ provider, tornadoPool })
+function findBlindingForNullifier(
+  { keypair, nullifierToUtxo, commitmentToUtxo },
+  trivialNullifier,
+  commitment,
+) {
+  trivialNullifier = toFixedHex(trivialNullifier)
+  commitment = toFixedHex(commitment)
+
+  if (!commitmentToUtxo.has(commitment)) {
+    return
+  }
+  if (nullifierToUtxo.has(trivialNullifier)) {
+    return
+  }
+  const utxo = commitmentToUtxo.get(commitment)
+  const newBlinding = BigNumber.from(
+    '0x' +
+      ethers.utils.keccak256(ethers.utils.concat([BigNumber.from(DEFAULT_ZERO), utxo.blinding])).slice(2, 64),
+  ).mod(FIELD_SIZE)
+
+  const newUtxo = new Utxo({ amount: 0, keypair, blinding: newBlinding, index: 0 })
+  nullifierToUtxo.set(toFixedHex(newUtxo.getNullifier()), newUtxo)
+  if (toFixedHex(newUtxo.getNullifier()) != trivialNullifier) {
+    throw new Error('Should not happen')
+  }
+}
+
+async function getMappings({ tornadoPool, keypair }) {
+  const commitmentEvents = await getCommitmentEvents({ tornadoPool })
   const commitmentToUtxo = new Map()
   const nullifierToUtxo = new Map()
   for (const event of commitmentEvents) {
@@ -34,37 +64,21 @@ async function getMappings({ provider, tornadoPool, keypair }) {
     commitmentToUtxo.set(toFixedHex(event.args.commitment), decryptedUtxo)
   }
 
-  const txRecordEvents = await getTxRecordEvents({ provider, tornadoPool })
+  const txRecordEvents = await getTxRecordEvents({ tornadoPool })
   for (const event of txRecordEvents) {
-    function findBlindingForNullifier(trivialNullifier, commitment) {
-      trivialNullifier = toFixedHex(trivialNullifier)
-      commitment = toFixedHex(commitment)
-
-      if (!commitmentToUtxo.has(commitment)) {
-        return
-      }
-      if (nullifierToUtxo.has(trivialNullifier)) {
-        return
-      }
-      const utxo = commitmentToUtxo.get(commitment)
-      const newBlinding = BigNumber.from(
-        '0x' +
-          ethers.utils
-            .keccak256(ethers.utils.concat([BigNumber.from(DEFAULT_ZERO), utxo.blinding]))
-            .slice(2, 64),
-      ).mod(FIELD_SIZE)
-
-      const newUtxo = new Utxo({ amount: BigInt(0), keypair, blinding: newBlinding, index: 0 })
-      nullifierToUtxo.set(toFixedHex(newUtxo.getNullifier()), newUtxo)
-      if (toFixedHex(newUtxo.getNullifier()) != trivialNullifier) {
-        throw new Error('Should not happen')
-      }
-    }
-    findBlindingForNullifier(event.args.inputNullifier1, event.args.outputCommitment1)
-    findBlindingForNullifier(event.args.inputNullifier2, event.args.outputCommitment2)
+    findBlindingForNullifier(
+      { keypair, nullifierToUtxo, commitmentToUtxo },
+      event.args.inputNullifier1,
+      event.args.outputCommitment1,
+    )
+    findBlindingForNullifier(
+      { keypair, nullifierToUtxo, commitmentToUtxo },
+      event.args.inputNullifier2,
+      event.args.outputCommitment2,
+    )
   }
 
-  // const nullifierEvents = await getNullifierEvents({ provider, tornadoPool })
+  // const nullifierEvents = await getNullifierEvents({ tornadoPool })
   // const nullifierToUtxo = new Map()
   // for (const event of nullifierEvents) {
   //   let decryptedUtxo = null
@@ -79,15 +93,8 @@ async function getMappings({ provider, tornadoPool, keypair }) {
   return { nullifierToUtxo, commitmentToUtxo }
 }
 
-async function getPoiSteps({
-  provider,
-  tornadoPool,
-  keypair,
-  nullifierToUtxo,
-  commitmentToUtxo,
-  finalTxRecord,
-}) {
-  const txRecordEvents = await getTxRecordEvents({ provider, tornadoPool })
+async function getPoiSteps({ tornadoPool, nullifierToUtxo, commitmentToUtxo, finalTxRecord }) {
+  const txRecordEvents = await getTxRecordEvents({ tornadoPool })
   let txRecords = []
   for (const event of txRecordEvents) {
     if (!commitmentToUtxo.has(toFixedHex(event.args.outputCommitment1))) {
@@ -162,9 +169,9 @@ function buildTxRecordMerkleTree({ events }) {
   return new MerkleTree(MERKLE_TREE_HEIGHT, leaves, { hashFunction: poseidonHash2 })
 }
 
-async function proveInclusionWithTxHash({ provider, tornadoPool, keypair, allowlist, txHash }) {
-  const event = await getTxRecord({ provider, tornadoPool, txHash })
-  const { nullifierToUtxo, commitmentToUtxo } = await getMappings({ provider, tornadoPool, keypair })
+async function proveInclusionWithTxHash({ tornadoPool, keypair, allowlist, txHash }) {
+  const event = await getTxRecord({ tornadoPool, txHash })
+  const { nullifierToUtxo, commitmentToUtxo } = await getMappings({ tornadoPool, keypair })
 
   const finalTxRecord = new TxRecord({
     inputs: [
@@ -180,7 +187,6 @@ async function proveInclusionWithTxHash({ provider, tornadoPool, keypair, allowl
   })
 
   return await proveInclusion({
-    provider,
     tornadoPool,
     keypair,
     allowlist,
@@ -191,7 +197,6 @@ async function proveInclusionWithTxHash({ provider, tornadoPool, keypair, allowl
 }
 
 async function proveInclusion({
-  provider,
   tornadoPool,
   keypair,
   allowlist,
@@ -201,7 +206,6 @@ async function proveInclusion({
 }) {
   if (!nullifierToUtxo || !commitmentToUtxo) {
     const { nullifierToUtxo: nullifierToUtxo_, commitmentToUtxo: commitmentToUtxo_ } = await getMappings({
-      provider,
       tornadoPool,
       keypair,
     })
@@ -209,19 +213,12 @@ async function proveInclusion({
     commitmentToUtxo = commitmentToUtxo_
   }
   const { steps, txRecordEvents } = await getPoiSteps({
-    provider,
     tornadoPool,
-    keypair,
     nullifierToUtxo,
     commitmentToUtxo,
     finalTxRecord,
   })
-  // for (let i = 0; i < steps.length; i++) {
-  //   console.log('Step', i)
-  //   console.log('Inputs:', steps[i].inputs)
-  //   console.log('Outputs:', steps[i].outputs)
-  //   console.log('_______________')
-  // }
+
   const txRecordsMerkleTree = buildTxRecordMerkleTree({ events: txRecordEvents })
   const allowedTxRecordsMerkleTree = buildTxRecordMerkleTree({ events: txRecordEvents })
   let accInnocentCommitments = [ZERO_VALUE, ZERO_VALUE]
