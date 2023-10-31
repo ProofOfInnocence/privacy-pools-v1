@@ -11,7 +11,7 @@ const { Keypair } = require('../src/keypair')
 
 const { getUtxos, deposit, withdraw, balance } = require('../src/cli')
 
-const MERKLE_TREE_HEIGHT = 5
+const MERKLE_TREE_HEIGHT = 23
 const MAXIMUM_DEPOSIT_AMOUNT = utils.parseEther(process.env.MAXIMUM_DEPOSIT_AMOUNT || '1')
 
 describe('Privacy Pool', function () {

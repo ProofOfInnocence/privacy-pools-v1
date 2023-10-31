@@ -6,7 +6,7 @@ const { toFixedHex, poseidonHash2, getExtDataHash, FIELD_SIZE, shuffle } = requi
 const Utxo = require('./utxo')
 
 const { prove } = require('./prover')
-const MERKLE_TREE_HEIGHT = 5
+const MERKLE_TREE_HEIGHT = 23
 
 async function buildMerkleTree({ tornadoPool }) {
   const filter = tornadoPool.filters.NewCommitment()

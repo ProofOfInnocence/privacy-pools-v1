@@ -8,11 +8,11 @@ const { MAXIMUM_DEPOSIT_AMOUNT } = process.env
 async function main() {
   require('./compileHasher')
 
-  const chainId = await ethers.provider.getNetwork().then(n => n.chainId);
+  const chainId = await ethers.provider.getNetwork().then((n) => n.chainId)
   console.log('chainId: ', chainId)
-  if(chainId !== 5){
+  if (chainId !== 5) {
     console.log('Please switch to goerli network')
-    return;
+    return
   }
 
   const token = '0xB4FBF271143F4FBf7B91A5ded31805e42b2208d6' // WETH on goerli

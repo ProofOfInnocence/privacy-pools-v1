@@ -23,7 +23,7 @@ const {
 require('../src/txRecord')
 const fs = require('fs')
 
-const MERKLE_TREE_HEIGHT = 5
+const MERKLE_TREE_HEIGHT = 23
 const l1ChainId = 1
 const MAXIMUM_DEPOSIT_AMOUNT = utils.parseEther(process.env.MAXIMUM_DEPOSIT_AMOUNT || '1')
 

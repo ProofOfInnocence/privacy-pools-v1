@@ -1,11 +1,12 @@
 const Utxo = require('./utxo')
+const ethers = require('ethers')
 const { BigNumber } = ethers
 const { transaction } = require('./index')
 const { toFixedHex, FIELD_SIZE } = require('./utils')
 const { proveInclusion } = require('./poi')
 
 const TxRecord = require('./txRecord')
-const { getNullifierEvents, getCommitmentEvents, getTxRecordEvents } = require('./events.js')
+const { getNullifierEvents, getCommitmentEvents } = require('./events.js')
 
 const DEFAULT_ZERO = '21663839004416932945382355908790599225266501822907911457504978515578255421292'
 
@@ -79,9 +80,11 @@ async function transact({ provider, tornadoPool, keypair, amount, recipient = 0,
       index: 0,
     })
     const proof = await proveInclusion({ provider, tornadoPool, keypair, finalTxRecord: withdrawTxRecord })
-    // console.log('Withdrawing with proof', proof)
+    if (!proof) {
+      throw new Error('Proof is not valid')
+    }
   }
-  return await transaction({ tornadoPool, inputs, outputs, recipient, membershipProofURI: "" })
+  return await transaction({ tornadoPool, inputs, outputs, recipient, membershipProofURI: '' })
 }
 
 async function deposit({ provider, tornadoPool, keypair, amount }) {

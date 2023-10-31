@@ -7,8 +7,8 @@
     "test": "test"
   },
   "scripts": {
-    "circuit": "./scripts/buildCircuit.sh 2",
-    "circuit_prod": "rm -rf ./artifacts/circuits && ./scripts/buildCircuit_prod.sh 2",
+    "circuit": "bash ./scripts/unzipCircuits.sh",
+    "circuit_prod": "rm -rf ./artifacts/circuits && ./scripts/unzipCircuits.sh",
     "compile:hasher": "npx hardhat hasher",
     "compile": "npx hardhat compile && yarn compile:hasher",
     "build": "npm run circuit && npm run compile",

@@ -10,7 +10,7 @@ async function getCommitmentEvents({ provider, tornadoPool }) {
   return await tornadoPool.queryFilter(filter, 0)
 }
 
-async function getTxRecordEvents({ provider, tornadoPool }) {
+async function getTxRecordEvents({ tornadoPool }) {
   // TODO: Add theGraph
   const filter = tornadoPool.filters.NewTxRecord()
   return await tornadoPool.queryFilter(filter, 0)
