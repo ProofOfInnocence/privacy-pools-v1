@@ -3,28 +3,16 @@ const { ethers, waffle } = hre
 const { loadFixture } = waffle
 const { expect } = require('chai')
 const { utils } = ethers
-const { prove } = require('../src/prover')
 const { utils: ffjavascript } = require('ffjavascript')
 
-const Utxo = require('../src/utxo')
-const { transaction, registerAndTransact, prepareTransaction, buildMerkleTree } = require('../src/index')
-const { toFixedHex, poseidonHash, poseidonHash2 } = require('../src/utils')
 const { Keypair } = require('../src/keypair')
-const MerkleTree = require('fixed-merkle-tree')
 
-const { getUtxos, deposit, withdraw, balance } = require('../src/cli')
-const {
-  proveInclusion,
-  proveInclusionWithTxHash,
-  getPoiSteps,
-  buildTxRecordMerkleTree,
-  getTxRecord,
-} = require('../src/poi')
+const { deposit, withdraw, balance } = require('../src/cli')
+const { proveInclusionWithTxHash } = require('../src/poi')
 require('../src/txRecord')
 const fs = require('fs')
 
 const MERKLE_TREE_HEIGHT = 23
-const l1ChainId = 1
 const MAXIMUM_DEPOSIT_AMOUNT = utils.parseEther(process.env.MAXIMUM_DEPOSIT_AMOUNT || '1')
 
 describe('ProofOfInnocence', function () {
@@ -89,7 +77,7 @@ describe('ProofOfInnocence', function () {
     expect(await balance({ provider: ethers.provider, tornadoPool, keypair: aliceKeypair })).to.be.equal(
       aliceDepositAmount1.add(aliceDepositAmount2),
     )
-    const result1 = await withdraw({
+    await withdraw({
       provider: ethers.provider,
       tornadoPool,
       keypair: aliceKeypair,
@@ -125,6 +113,7 @@ describe('ProofOfInnocence', function () {
       tornadoPool,
       keypair: aliceKeypair,
       txHash: result2.transactionHash,
+      allowlist: [bobEthAddress],
     })
     // const { proof, publicSignals } = await prove(firstStepInput, `./membership-proof/artifacts/circuits/proofOfInnocence`)
     // console.log(proof)
@@ -163,7 +152,7 @@ describe('ProofOfInnocence', function () {
     expect(await balance({ provider: ethers.provider, tornadoPool, keypair: aliceKeypair })).to.be.equal(
       aliceDepositAmount1.add(aliceDepositAmount2),
     )
-    const result = await withdraw({
+    await withdraw({
       provider: ethers.provider,
       tornadoPool,
       keypair: aliceKeypair,

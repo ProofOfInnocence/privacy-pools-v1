@@ -21,7 +21,7 @@ function getExtDataHash({
   fee,
   encryptedOutput1,
   encryptedOutput2,
-  membershipProofURI
+  membershipProofURI,
 }) {
   const abi = new ethers.utils.AbiCoder()
 
@@ -37,7 +37,7 @@ function getExtDataHash({
         fee: toFixedHex(fee),
         encryptedOutput1: encryptedOutput1,
         encryptedOutput2: encryptedOutput2,
-        membershipProofURI: membershipProofURI
+        membershipProofURI: membershipProofURI,
       },
     ],
   )
@@ -68,7 +68,6 @@ const toBuffer = (value, length) =>
       .padStart(length * 2, '0'),
     'hex',
   )
-
 
 async function getSignerFromAddress(address) {
   await network.provider.request({

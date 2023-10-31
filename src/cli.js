@@ -79,7 +79,7 @@ async function transact({ tornadoPool, keypair, amount, recipient = 0, allowlist
       publicAmount,
       index: 0,
     })
-    const proof = await proveInclusion({ tornadoPool, keypair, finalTxRecord: withdrawTxRecord })
+    const proof = await proveInclusion({ tornadoPool, keypair, finalTxRecord: withdrawTxRecord, allowlist })
     if (!proof) {
       throw new Error('Proof is not valid')
     }

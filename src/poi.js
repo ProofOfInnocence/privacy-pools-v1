@@ -204,6 +204,10 @@ async function proveInclusion({
   nullifierToUtxo = null,
   commitmentToUtxo = null,
 }) {
+  if (!allowlist) {
+    console.log('allowlist is required', allowlist)
+    throw new Error('allowlist is required')
+  }
   if (!nullifierToUtxo || !commitmentToUtxo) {
     const { nullifierToUtxo: nullifierToUtxo_, commitmentToUtxo: commitmentToUtxo_ } = await getMappings({
       tornadoPool,
@@ -220,7 +224,7 @@ async function proveInclusion({
   })
 
   const txRecordsMerkleTree = buildTxRecordMerkleTree({ events: txRecordEvents })
-  const allowedTxRecordsMerkleTree = buildTxRecordMerkleTree({ events: txRecordEvents })
+  const allowedTxRecordsMerkleTree = buildTxRecordMerkleTree({ events: txRecordEvents }) // TODO: Change here with allowlist
   let accInnocentCommitments = [ZERO_VALUE, ZERO_VALUE]
   let inputs = []
   for (let i = 0; i < steps.length; i++) {

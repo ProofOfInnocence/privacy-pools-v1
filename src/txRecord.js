@@ -1,3 +1,4 @@
+const { BigNumber } = require('ethers')
 const { poseidonHash, toFixedHex, poseidonHash2 } = require('./utils')
 
 class TxRecord {
@@ -65,7 +66,7 @@ class TxRecord {
     let allowedTxRecordsPathIndex = null
     let allowedTxRecordsPathElements = null
 
-    if (BigInt(this.publicAmount) < BigInt(2) ** BigInt(240)) {
+    if (this.publicAmount < BigNumber.from(2).pow(240)) {
       allowedTxRecordsPathIndex = allowedTxRecordsMerkleTree.indexOf(txRecord)
       if (allowedTxRecordsPathIndex == -1) {
         throw new Error('txRecord not found in allowedTxRecordsMerkleTree')
@@ -85,8 +86,6 @@ class TxRecord {
     let outAmount = []
     let outPubkey = []
     let outBlinding = []
-    // let accInnocentCommitmentsPathElements = []
-    // let accInnocentCommitmentsPathIndex = []
 
     for (let i = 0; i < this.inputs.length; i++) {
       inPrivateKey.push(this.inputs[i].keypair.privkey)
@@ -94,23 +93,6 @@ class TxRecord {
       inAmount.push(this.inputs[i].amount)
       inBlinding.push(this.inputs[i].blinding)
       inPathIndices.push(this.inputs[i].index)
-      // if (this.inputs[i].amount > 0) {
-      //   const curBlindedCommitment = toFixedHex(
-      //     poseidonHash([this.inputs[i].getCommitment(), this.inputs[i].index]),
-      //   )
-
-      //   const curAccInnocentIndex = accInnocentCommitmentsMerkleTree.indexOf(curBlindedCommitment)
-      //   if (curAccInnocentIndex == -1) {
-      //     throw new Error('Blinded commitment not found in accInnocentCommitmentsMerkleTree')
-      //   }
-      //   accInnocentCommitmentsPathIndex.push(curAccInnocentIndex)
-      //   accInnocentCommitmentsPathElements.push(
-      //     accInnocentCommitmentsMerkleTree.path(curAccInnocentIndex).pathElements,
-      //   )
-      // } else {
-      //   accInnocentCommitmentsPathIndex.push(0)
-      //   accInnocentCommitmentsPathElements.push(new Array(accInnocentCommitmentsMerkleTree.levels).fill(0))
-      // }
     }
     let outputInnocentCommitments = []
     for (let j = 0; j < this.outputs.length; j++) {
