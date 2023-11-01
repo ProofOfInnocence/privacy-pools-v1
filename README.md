@@ -1,19 +1,24 @@
-# Prıvacy Pool V1 [![Build Status](https://github.com/chainwayxyz/privacy-pools-arb/workflows/build/badge.svg)](https://github.com/chainwayxyz/privacy-pools-arb/actions)
+# Privacy Pool V1 [![Build Status](https://github.com/chainwayxyz/privacy-pools-arb/workflows/build/badge.svg)](https://github.com/chainwayxyz/privacy-pools-arb/actions)
 
-This an experimental version of privacypools.com which supports arbitrary denomination. It's a beta version, so use it at your own risk.
+Welcome to the experimental version of Privacy Pool V1, brought to you by [privacypools.com](https://privacypools.com). This version introduces support for arbitrary denominations, expanding the functionality and flexibility of the Privacy Pool. Although this release is still in beta, we invite you to explore its features. However, please be advised to use it at your own discretion.
 
-## Usage
+## Getting Started
+
+Kickstart your journey with Privacy Pool V1 by following these steps:
 
 ```shell
-yarn
-yarn build
-yarn test
+yarn                  # Install dependencies
+yarn build            # Build the project
+yarn test             # Run tests to ensure everything is working as expected
 ```
 
-## Deploy
+## Deployment
 
-Deploy Privacy Pool V1:
+Ready to deploy Privacy Pool V1? Execute the following command:
 
 ```shell
 npx hardhat run scripts/deployPrivacyPool.js --network goerli
 ```
+
+We appreciate your interest in Privacy Pool V1 and welcome your feedback. Feel free to [report any issues](https://github.com/chainwayxyz/privacy-pools-arb/issues) or [submit pull requests](https://github.com/chainwayxyz/privacy-pools-arb/pulls) to help us improve.
+
