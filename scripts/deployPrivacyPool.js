@@ -1,9 +1,12 @@
 const { ethers } = require('hardhat')
+// import fs for writing to a file
+const fs = require('fs')
 const { utils } = ethers
 // const prompt = require('prompt-sync')()
 
 const MERKLE_TREE_HEIGHT = 23
 const { MAXIMUM_DEPOSIT_AMOUNT } = process.env
+// const fs = require('fs')
 
 async function main() {
   require('./compileHasher')
@@ -19,6 +22,7 @@ async function main() {
 
   const Verifier2 = await ethers.getContractFactory('Verifier2')
   const verifier2 = await Verifier2.deploy()
+  console.log('verifier2: ', verifier2)
   await verifier2.deployed()
   console.log(`verifier2: ${verifier2.address}`)
 
@@ -29,7 +33,7 @@ async function main() {
 
   const Pool = await ethers.getContractFactory('PrivacyPool')
 
-  console.log('=========> this is what Pool looks like: ', Pool)
+  // console.log('=========> this is what Pool looks like: ', Pool)
   console.log(
     `constructor args:\n${JSON.stringify([
       verifier2.address,
@@ -39,13 +43,19 @@ async function main() {
       utils.parseEther(MAXIMUM_DEPOSIT_AMOUNT),
     ]).slice(1, -1)}\n`,
   )
-  /**
-   *     IVerifier _verifier2,
-    uint32 _levels,
-    address _hasher,
-    IERC20 _token,
-    uint256 _maximumDepositAmount
-   */
+  // save constructor args to a file arguments.js  as module.exports = [
+
+  // fs.writeFileSync(
+  //   'arguments.js',
+  //   `module.exports = [${JSON.stringify([
+  //     verifier2.address,
+  //     MERKLE_TREE_HEIGHT,
+  //     hasher.address,
+  //     token,
+  //     utils.parseEther(MAXIMUM_DEPOSIT_AMOUNT),
+  //   ]).slice(1, -1)}]`,
+  // )
+
   const privacyPool = await Pool.deploy(
     verifier2.address,
     MERKLE_TREE_HEIGHT,
@@ -55,6 +65,12 @@ async function main() {
   )
 
   console.log(`Privacy Pool Deployed at: ${privacyPool.address}`)
+  // npx hardhat verify --constructor-args arguments.js DEPLOYED_CONTRACT_ADDRESS
+
+  console.log('To verify the contract on etherscan run:')
+  console.log(
+    `npx hardhat verify --constructor-args arguments.js ${privacyPool.address}`,
+  )
 }
 
 main()
