@@ -8,11 +8,11 @@
   },
   "scripts": {
     "circuit": "bash ./scripts/unzipCircuits.sh",
-    "circuit_prod": "rm -rf ./artifacts/circuits && ./scripts/unzipCircuits.sh",
+    "circuit_prod": "rm -rf ./artifacts/circuits && bash ./scripts/unzipCircuits.sh",
     "compile:hasher": "npx hardhat hasher",
     "compile": "npx hardhat compile && yarn compile:hasher",
     "build": "npm run circuit && npm run compile",
-    "deploy": "yarn circuit_prod && npx hardhat run scripts/deployPrivacyPool.js --network goerli",
+    "deploy": "npx hardhat run scripts/deployPrivacyPool.js --network goerli",
     "test": "npx hardhat test",
     "test-poi": "npx hardhat test test/poi.test.js",
     "eslint": "eslint --ext .js --ignore-path .gitignore .",
@@ -50,6 +50,7 @@
     "typechain": "^5.1.2"
   },
   "devDependencies": {
+    "@nomicfoundation/hardhat-verify": "^2.0.0",
     "@nomiclabs/hardhat-etherscan": "^2.1.8",
     "babel-eslint": "^10.1.0",
     "eslint": "^7.28.0",
