@@ -6,3 +6,8 @@ artifacts
 src/types
 .vscode
 **DS_Store
+arguments.js
+**target/
+**Cargo.lock
+**/*.rs.bk
+*.pdb
