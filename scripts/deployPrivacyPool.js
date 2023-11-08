@@ -13,7 +13,7 @@ async function main() {
   const network = await ethers.provider.getNetwork()
 
   const chainId = network.chainId
-  
+
   console.log('deploying to chainId:', network.name)
   if (chainId !== 5) {
     console.log('Please switch to goerli network')
@@ -50,7 +50,9 @@ async function main() {
   // npx hardhat verify --constructor-args arguments.js DEPLOYED_CONTRACT_ADDRESS
 
   console.log('To verify the contract on etherscan run:')
-  console.log(`npx hardhat verify --constructor-args arguments.js ${privacyPool.address} --network ${network.name}`)
+  console.log(
+    `npx hardhat verify --constructor-args arguments.js ${privacyPool.address} --network ${network.name}`,
+  )
 }
 
 main()
