@@ -1,8 +1,8 @@
 pragma circom 2.0.6;
 
 
-include "../../node_modules/circomlib/circuits/poseidon.circom";
-include "../../node_modules/circomlib/circuits/comparators.circom";
+include "../../circomlib/circuits/poseidon.circom";
+include "../../circomlib/circuits/comparators.circom";
 include "./merkleProof.circom";
 include "./merkleTreeUpdater.circom";
 include "./keypair.circom";
