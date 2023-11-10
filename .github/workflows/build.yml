@@ -19,3 +19,6 @@ jobs:
       - run: yarn lint
       - run: yarn build
       - run: yarn test
+      - run: cd membership-proof
+      - run: yarn install --network-concurrency 1
+      - run: yarn test
