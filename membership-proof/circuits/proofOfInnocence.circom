@@ -222,4 +222,4 @@ template Step(levels, nIns, nOuts, zeroLeaf) {
     step_out <== stepHasher.out + isLastStep * (txRecordWithoutIndexHasher.out - stepHasher.out);
 }
 
-component main{public [step_in]} = Step(5, 2, 2, 11850551329423159860688778991827824730037759162201783566284850822760196767874);
+component main{public [step_in]} = Step(23, 2, 2, 11850551329423159860688778991827824730037759162201783566284850822760196767874);

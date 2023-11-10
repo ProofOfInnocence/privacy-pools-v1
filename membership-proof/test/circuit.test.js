@@ -12,8 +12,8 @@ describe('Proof of Innocence', async () => {
       const inputs = testVectors[i]
       const witness = await circuit.calculateWitness(inputs)
       await circuit.checkConstraints(witness)
-      const output = await circuit.getDecoratedOutput(witness)
-      console.log(output.slice(0, output.indexOf('\n')))
+      //const output = await circuit.getDecoratedOutput(witness)
+      //console.log(output.slice(0, output.indexOf('\n')))
     }
   })
 })

@@ -31,5 +31,5 @@ pub fn get_cbor(circuit_filepath: String, cbor_filepath: String) {
 
 fn main() {
     println!("Hello, world!");
-    get_cbor("../artifacts/proofOfInnocence.r1cs".to_string(), "../wasm-nova/output/proofOfInnocence.cbor".to_string());
+    get_cbor("../wasm-nova/output/proofOfInnocence.r1cs".to_string(), "../wasm-nova/output/proofOfInnocence.cbor".to_string());
 }

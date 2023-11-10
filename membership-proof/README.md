@@ -1,7 +1,7 @@
 to compile circom to r1cs, use 
 
 ```sh
-circom circuits/proofOfInnocence.circom --r1cs --wasm -o artifacts/
+circom circuits/proofOfInnocence.circom --r1cs --wasm -o wasm-nova/output
 ```
 
 to create pp cbor from r1cs, use cbor-nova
