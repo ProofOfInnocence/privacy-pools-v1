@@ -35,12 +35,22 @@ extern "C" {
 #[wasm_bindgen(module = "/file.js")]
 extern "C" {
     fn read_file_binary(path: &str) -> JsValue;
+    fn read_filex(path: &str) -> JsValue;
 }
 
 macro_rules! console_log {
     // Note that this is using the `log` function imported above during
     // `bare_bones`
     ($($t:tt)*) => (log(&format_args!($($t)*).to_string()))
+}
+
+#[wasm_bindgen]
+pub async fn read_filem(path: &str, base: &str) -> String {
+    let p = get_path(base, path);
+    console_log!("url rust x: {}", p);
+    let result: Result<JsValue, JsValue> = JsFuture::from(js_sys::Promise::from(read_filex(&p))).await;
+    let x = result.unwrap().as_string().unwrap();
+    return x;
 }
 
 #[wasm_bindgen]

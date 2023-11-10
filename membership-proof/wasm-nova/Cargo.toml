@@ -8,8 +8,7 @@ edition = "2021"
 [dependencies]
 # nova-scotia = "0.5.0"
 nova-scotia = {git = "https://github.com/nalinbhardwaj/Nova-Scotia"}
-# nova-snark = {git = "https://github.com/chainwayxyz/Nova", branch = "dev"}
-nova-snark = {git = "https://github.com/chainwayxyz/Nova", rev = "b42938ea862541c098b86a20b8914d96577384fa"}
+nova-snark = {git = "https://github.com/chainwayxyz/Nova", branch = "hakan/arb"}
 num-bigint = { version = "0.4", features = ["serde", "rand"] }
 num-traits = "0.2.15"
 serde = "1.0"
@@ -18,8 +17,7 @@ serde_cbor = "0.11"
 pasta_curves = "0.5"
 
 [patch.crates-io]
-# nova-snark = {git = "https://github.com/chainwayxyz/Nova", branch = "dev"}
-nova-snark = {git = "https://github.com/chainwayxyz/Nova", rev = "b42938ea862541c098b86a20b8914d96577384fa"}
+nova-snark = {git = "https://github.com/chainwayxyz/Nova", branch = "hakan/arb"}
 
 [target.'cfg(target_family = "wasm")'.dependencies]
 getrandom = { version = "0.2", features = ["js"]}
