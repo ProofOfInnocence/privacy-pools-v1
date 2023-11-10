@@ -13,7 +13,7 @@ cargo run --release
 to test wasm
 
 ```sh
-wasm-pack test --node --chrome
+wasm-pack test --release --node --chrome
 ```
 
 to create pkg folder
