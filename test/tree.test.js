@@ -5,8 +5,8 @@ const { expect } = require('chai')
 
 const { poseidonHash2, toFixedHex } = require('../src/utils')
 
-const MERKLE_TREE_HEIGHT = 5
 const MerkleTree = require('fixed-merkle-tree')
+const { MERKLE_TREE_HEIGHT } = require('../src')
 
 describe('MerkleTreeWithHistory', function () {
   this.timeout(20000)

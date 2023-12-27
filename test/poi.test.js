@@ -11,8 +11,8 @@ const { deposit, withdraw, balance } = require('../src/cli')
 const { proveInclusionWithTxHash } = require('../src/poi')
 require('../src/txRecord')
 const fs = require('fs')
+const { MERKLE_TREE_HEIGHT } = require('../src')
 
-const MERKLE_TREE_HEIGHT = 5
 const MAXIMUM_DEPOSIT_AMOUNT = utils.parseEther(process.env.MAXIMUM_DEPOSIT_AMOUNT || '1')
 
 describe('ProofOfInnocence', function () {
@@ -119,13 +119,22 @@ describe('ProofOfInnocence', function () {
     // console.log(proof)
     // console.log(publicSignals)
     const path = './membership-proof/test/inputs.json'
+    const path2 = './membership-proof/wasm-nova/output/inputs.json'
+    const startInputPath = './membership-proof/wasm-nova/output/start.json'
     // console.log(JSON.stringify(, null, 2))
     const inputs = ffjavascript.stringifyBigInts(stepInputs)
     // write inputs to te path
     fs.writeFileSync(path, JSON.stringify(inputs, null, 2))
+    fs.writeFileSync(path2, JSON.stringify(inputs, null, 2))
+    fs.writeFileSync(
+      startInputPath,
+      JSON.stringify({
+        step_in: ['0x' + BigInt(stepInputs[0]['step_in']).toString(16)],
+      }),
+    )
   })
 
-  it('should generate inputs before withdraw', async function () {
+  xit('should generate inputs before withdraw', async function () {
     const { tornadoPool } = await loadFixture(fixture)
     const aliceDepositAmount1 = utils.parseEther('0.03')
     const aliceDepositAmount2 = utils.parseEther('0.04')

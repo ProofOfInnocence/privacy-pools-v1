@@ -23,3 +23,10 @@ wasm-pack build --target web --out-dir pkg
 ```
 
 To use normal nova scotia, use a.rs
+
+
+Single command to compile and run
+
+```sh
+circom ../circuits/proofOfInnocence.circom --r1cs --wasm -o ./output && rustup override set 1.70.0 && cargo run --release && rustup override set nightly-2022-12-12 && wasm-pack test --release --node --chrome
+```

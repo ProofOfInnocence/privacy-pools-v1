@@ -6,7 +6,7 @@ const { toFixedHex, poseidonHash2, getExtDataHash, FIELD_SIZE } = require('./uti
 const Utxo = require('./utxo')
 
 const { prove } = require('./prover')
-const MERKLE_TREE_HEIGHT = 5
+const MERKLE_TREE_HEIGHT = 23
 
 async function buildMerkleTree({ tornadoPool }) {
   const filter = tornadoPool.filters.NewCommitment()
@@ -149,4 +149,4 @@ async function registerAndTransact({ tornadoPool, account, ...rest }) {
   await receipt.wait()
 }
 
-module.exports = { transaction, registerAndTransact, prepareTransaction, buildMerkleTree }
+module.exports = { transaction, registerAndTransact, prepareTransaction, buildMerkleTree, MERKLE_TREE_HEIGHT }

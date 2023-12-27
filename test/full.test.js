@@ -5,13 +5,12 @@ const { expect } = require('chai')
 const { utils } = ethers
 
 const Utxo = require('../src/utxo')
-const { transaction, prepareTransaction, buildMerkleTree } = require('../src/index')
+const { transaction, prepareTransaction, buildMerkleTree, MERKLE_TREE_HEIGHT } = require('../src/index')
 const { toFixedHex, poseidonHash } = require('../src/utils')
 const { Keypair } = require('../src/keypair')
 
 const { getUtxos, deposit, withdraw, balance } = require('../src/cli')
 
-const MERKLE_TREE_HEIGHT = 5
 const MAXIMUM_DEPOSIT_AMOUNT = utils.parseEther(process.env.MAXIMUM_DEPOSIT_AMOUNT || '1')
 
 describe('Privacy Pool', function () {

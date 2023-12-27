@@ -5,13 +5,13 @@ const MerkleTree = require('fixed-merkle-tree')
 const { ethers } = require('hardhat')
 const { BigNumber } = ethers
 
-const MERKLE_TREE_HEIGHT = 5
 const ZERO_VALUE = BigNumber.from(
   '21663839004416932945382355908790599225266501822907911457504978515578255421292',
 )
 const DEFAULT_ZERO = '21663839004416932945382355908790599225266501822907911457504978515578255421292'
 
 const { getCommitmentEvents, getTxRecordEvents } = require('./events.js')
+const { MERKLE_TREE_HEIGHT } = require('./index.js')
 
 async function getTxRecord({ tornadoPool, txHash }) {
   const receipt = await tornadoPool.provider.getTransactionReceipt(txHash)

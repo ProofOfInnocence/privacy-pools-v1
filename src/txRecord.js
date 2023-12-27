@@ -110,8 +110,8 @@ class TxRecord {
       stepInputs: {
         txRecordsPathElements: txRecordsPathElements,
         txRecordsPathIndex: txRecordsPathIndex,
-        allowedTxRecordsPathElements: allowedTxRecordsPathElements,
-        allowedTxRecordsPathIndex: allowedTxRecordsPathIndex,
+        // allowedTxRecordsPathElements: allowedTxRecordsPathElements,
+        // allowedTxRecordsPathIndex: allowedTxRecordsPathIndex,
         accInnocentCommitments,
         isLastStep: isLastStep,
         txRecordsMerkleRoot: txRecordsMerkleTree.root(),

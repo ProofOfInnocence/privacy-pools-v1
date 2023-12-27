@@ -1,10 +1,10 @@
 const { ethers } = require('hardhat')
 // import fs for writing to a file
 const fs = require('fs')
+const { MERKLE_TREE_HEIGHT } = require('../src')
 const { utils } = ethers
 // const prompt = require('prompt-sync')()
 
-const MERKLE_TREE_HEIGHT = 23
 const { MAXIMUM_DEPOSIT_AMOUNT } = process.env
 // const fs = require('fs')
 

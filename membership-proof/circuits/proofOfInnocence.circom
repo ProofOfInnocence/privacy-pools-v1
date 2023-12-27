@@ -42,8 +42,8 @@ template Step(levels, nIns, nOuts, zeroLeaf) {
     signal input txRecordsPathElements[levels];
     signal input txRecordsPathIndex;
     // Second MT: allowedTxRecordMT given by the authorities
-    signal input allowedTxRecordsPathElements[levels];
-    signal input allowedTxRecordsPathIndex;
+    // signal input allowedTxRecordsPathElements[levels];
+    // signal input allowedTxRecordsPathIndex;
     // Third MT: accInnocentCommitmentMT created by the user
     signal input accInnocentCommitments[nIns];
     // signal input accInnocentCommitmentsPathElements[nIns][levels];
@@ -118,26 +118,44 @@ template Step(levels, nIns, nOuts, zeroLeaf) {
     for (var i = 0; i < levels; i++) {
         txRecordTree.pathElements[i] <== txRecordsPathElements[i];
     }
-    // check whether txRecord is in txRecordsMT if it is not the last step
-    component checkTxRecordsRoot = ForceEqualIfEnabled();
-    checkTxRecordsRoot.in[0] <== txRecordsMerkleRoot;
-    checkTxRecordsRoot.in[1] <== txRecordTree.root;
-    checkTxRecordsRoot.enabled <== (1 - isLastStep);
 
-    // 3 - if publicAmount is positive (deposit), check if it is in allowlist 
-    component allowedTxRecordTree = MerkleProof(levels);
-    allowedTxRecordTree.leaf <== txRecordHasher.out;
-    allowedTxRecordTree.pathIndices <== allowedTxRecordsPathIndex;
-    for (var i = 0; i < levels; i++) {
-        allowedTxRecordTree.pathElements[i] <== allowedTxRecordsPathElements[i];
-    }
-    component checkAllowlistRoot = ForceEqualIfEnabled();
-    checkAllowlistRoot.in[0] <== allowedTxRecordsMerkleRoot;
-    checkAllowlistRoot.in[1] <== allowedTxRecordTree.root;
     //check if publicAmount is positive
     component isDeposit = IsNum2Bits(240);
     isDeposit.in <== publicAmount;
+
+    component checkAllowlistRoot = ForceEqualIfEnabled();
+    checkAllowlistRoot.in[0] <== allowedTxRecordsMerkleRoot;
+    checkAllowlistRoot.in[1] <== txRecordTree.root;
     checkAllowlistRoot.enabled <== isDeposit.isLower;
+
+
+    // check whether txRecord is in txRecordsMT if it is not the last step or check the root is allowlist if it is a deposit
+    component checkTxRecordsRoot = ForceEqualIfEnabled();
+    checkTxRecordsRoot.in[0] <== txRecordsMerkleRoot;
+    checkTxRecordsRoot.in[1] <== txRecordTree.root;
+    checkTxRecordsRoot.enabled <== (1 - isLastStep)*(1 - isDeposit.isLower);
+
+
+    // // check whether txRecord is in txRecordsMT if it is not the last step
+    // component checkTxRecordsRoot = ForceEqualIfEnabled();
+    // checkTxRecordsRoot.in[0] <== txRecordsMerkleRoot;
+    // checkTxRecordsRoot.in[1] <== txRecordTree.root;
+    // checkTxRecordsRoot.enabled <== (1 - isLastStep);
+
+    // // 3 - if publicAmount is positive (deposit), check if it is in allowlist 
+    // component allowedTxRecordTree = MerkleProof(levels);
+    // allowedTxRecordTree.leaf <== txRecordHasher.out;
+    // allowedTxRecordTree.pathIndices <== allowedTxRecordsPathIndex;
+    // for (var i = 0; i < levels; i++) {
+    //     allowedTxRecordTree.pathElements[i] <== allowedTxRecordsPathElements[i];
+    // }
+    // component checkAllowlistRoot = ForceEqualIfEnabled();
+    // checkAllowlistRoot.in[0] <== allowedTxRecordsMerkleRoot;
+    // checkAllowlistRoot.in[1] <== allowedTxRecordTree.root;
+    // //check if publicAmount is positive
+    // component isDeposit = IsNum2Bits(240);
+    // isDeposit.in <== publicAmount;
+    // checkAllowlistRoot.enabled <== isDeposit.isLower;
 
     //components for calculating txRecord input info
     component inKeypair[nIns];
@@ -231,4 +249,4 @@ template Step(levels, nIns, nOuts, zeroLeaf) {
     step_out <== stepHasher.out + isLastStep * (txRecordHasher.out - stepHasher.out);
 }
 
-component main{public [step_in]} = Step(5, 1, 1, 11850551329423159860688778991827824730037759162201783566284850822760196767874);
+component main{public [step_in]} = Step(23, 1, 1, 11850551329423159860688778991827824730037759162201783566284850822760196767874);
