@@ -65,8 +65,8 @@ class TxRecord {
 
     let allowedTxRecordsPathIndex = null
     let allowedTxRecordsPathElements = null
-
-    if (this.publicAmount < BigNumber.from(2).pow(240)) {
+    if (BigNumber.from(this.publicAmount).lt(BigNumber.from(2).pow(240))) {
+      
       allowedTxRecordsPathIndex = allowedTxRecordsMerkleTree.indexOf(txRecord)
       if (allowedTxRecordsPathIndex == -1) {
         throw new Error('txRecord not found in allowedTxRecordsMerkleTree')
