@@ -12,7 +12,7 @@ const { proveInclusionWithTxHash } = require('../src/poi')
 require('../src/txRecord')
 const fs = require('fs')
 
-const MERKLE_TREE_HEIGHT = 23
+const MERKLE_TREE_HEIGHT = 5
 const MAXIMUM_DEPOSIT_AMOUNT = utils.parseEther(process.env.MAXIMUM_DEPOSIT_AMOUNT || '1')
 
 describe('ProofOfInnocence', function () {
@@ -27,7 +27,7 @@ describe('ProofOfInnocence', function () {
   async function fixture() {
     require('../scripts/compileHasher')
     const [sender] = await ethers.getSigners()
-    const verifier2 = await deploy('Verifier2')
+    const verifier2 = await deploy('Verifier1')
     const hasher = await deploy('Hasher')
 
     const token = await deploy('WETH', 'Wrapped ETH', 'WETH')

@@ -5,7 +5,7 @@ const MerkleTree = require('fixed-merkle-tree')
 const { ethers } = require('hardhat')
 const { BigNumber } = ethers
 
-const MERKLE_TREE_HEIGHT = 23
+const MERKLE_TREE_HEIGHT = 5
 const ZERO_VALUE = BigNumber.from(
   '21663839004416932945382355908790599225266501822907911457504978515578255421292',
 )
@@ -71,11 +71,11 @@ async function getMappings({ tornadoPool, keypair }) {
       event.args.inputNullifier1,
       event.args.outputCommitment1,
     )
-    findBlindingForNullifier(
-      { keypair, nullifierToUtxo, commitmentToUtxo },
-      event.args.inputNullifier2,
-      event.args.outputCommitment2,
-    )
+    // findBlindingForNullifier(
+    //   { keypair, nullifierToUtxo, commitmentToUtxo },
+    //   event.args.inputNullifier2,
+    //   event.args.outputCommitment2,
+    // )
   }
 
   // const nullifierEvents = await getNullifierEvents({ tornadoPool })
@@ -100,23 +100,23 @@ async function getPoiSteps({ tornadoPool, nullifierToUtxo, commitmentToUtxo, fin
     if (!commitmentToUtxo.has(toFixedHex(event.args.outputCommitment1))) {
       continue
     }
-    if (!commitmentToUtxo.has(toFixedHex(event.args.outputCommitment2))) {
-      throw new Error('Should not happen')
-    }
+    // if (!commitmentToUtxo.has(toFixedHex(event.args.outputCommitment2))) {
+    //   throw new Error('Should not happen')
+    // }
     if (!nullifierToUtxo.has(toFixedHex(event.args.inputNullifier1))) {
       throw new Error('Should not happen')
     }
-    if (!nullifierToUtxo.has(toFixedHex(event.args.inputNullifier2))) {
-      throw new Error('Should not happen')
-    }
+    // if (!nullifierToUtxo.has(toFixedHex(event.args.inputNullifier2))) {
+    //   throw new Error('Should not happen')
+    // }
     const _txRecord = new TxRecord({
       inputs: [
         nullifierToUtxo.get(toFixedHex(event.args.inputNullifier1)),
-        nullifierToUtxo.get(toFixedHex(event.args.inputNullifier2)),
+        // nullifierToUtxo.get(toFixedHex(event.args.inputNullifier2)),
       ],
       outputs: [
         commitmentToUtxo.get(toFixedHex(event.args.outputCommitment1)),
-        commitmentToUtxo.get(toFixedHex(event.args.outputCommitment2)),
+        // commitmentToUtxo.get(toFixedHex(event.args.outputCommitment2)),
       ],
       publicAmount: event.args.publicAmount,
       index: event.args.index,
@@ -129,27 +129,27 @@ async function getPoiSteps({ tornadoPool, nullifierToUtxo, commitmentToUtxo, fin
   if (finalTxRecord.inputs[0].amount > 0) {
     todoProve.add(toFixedHex(finalTxRecord.inputs[0].getCommitment()))
   }
-  if (finalTxRecord.inputs[1].amount > 0) {
-    todoProve.add(toFixedHex(finalTxRecord.inputs[1].getCommitment()))
-  }
+  // if (finalTxRecord.inputs[1].amount > 0) {
+  //   todoProve.add(toFixedHex(finalTxRecord.inputs[1].getCommitment()))
+  // }
 
   txRecords = txRecords.filter((x) => (x.index < finalTxRecord.index ? finalTxRecord.index : x.index + 1))
   txRecords.sort((a, b) => b.index - a.index)
 
   for (const txRecord of txRecords) {
     if (
-      (txRecord.outputs[0].amount > 0 && todoProve.has(toFixedHex(txRecord.outputs[0].getCommitment()))) ||
-      (txRecord.outputs[1].amount > 0 && todoProve.has(toFixedHex(txRecord.outputs[1].getCommitment())))
+      (txRecord.outputs[0].amount > 0 && todoProve.has(toFixedHex(txRecord.outputs[0].getCommitment())))
+      // (txRecord.outputs[1].amount > 0 && todoProve.has(toFixedHex(txRecord.outputs[1].getCommitment())))
     ) {
       todoProve.delete(toFixedHex(txRecord.outputs[0].getCommitment()))
-      todoProve.delete(toFixedHex(txRecord.outputs[1].getCommitment()))
+      // todoProve.delete(toFixedHex(txRecord.outputs[1].getCommitment()))
 
       if (txRecord.inputs[0].amount > 0) {
         todoProve.add(toFixedHex(txRecord.inputs[0].getCommitment()))
       }
-      if (txRecord.inputs[1].amount > 0) {
-        todoProve.add(toFixedHex(txRecord.inputs[1].getCommitment()))
-      }
+      // if (txRecord.inputs[1].amount > 0) {
+      //   todoProve.add(toFixedHex(txRecord.inputs[1].getCommitment()))
+      // }
       steps.push(txRecord)
     }
   }
@@ -176,11 +176,11 @@ async function proveInclusionWithTxHash({ tornadoPool, keypair, allowlist, txHas
   const finalTxRecord = new TxRecord({
     inputs: [
       nullifierToUtxo.get(toFixedHex(event.args.inputNullifier1)),
-      nullifierToUtxo.get(toFixedHex(event.args.inputNullifier2)),
+      // nullifierToUtxo.get(toFixedHex(event.args.inputNullifier2)),
     ],
     outputs: [
       commitmentToUtxo.get(toFixedHex(event.args.outputCommitment1)),
-      commitmentToUtxo.get(toFixedHex(event.args.outputCommitment2)),
+      // commitmentToUtxo.get(toFixedHex(event.args.outputCommitment2)),
     ],
     publicAmount: event.args.publicAmount,
     index: event.args.index,
@@ -225,7 +225,7 @@ async function proveInclusion({
 
   const txRecordsMerkleTree = buildTxRecordMerkleTree({ events: txRecordEvents })
   const allowedTxRecordsMerkleTree = buildTxRecordMerkleTree({ events: txRecordEvents }) // TODO: Change here with allowlist
-  let accInnocentCommitments = [ZERO_VALUE, ZERO_VALUE]
+  let accInnocentCommitments = [ZERO_VALUE]
   let inputs = []
   for (let i = 0; i < steps.length; i++) {
     // console.log('Step', i)

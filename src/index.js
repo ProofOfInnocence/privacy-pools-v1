@@ -6,7 +6,7 @@ const { toFixedHex, poseidonHash2, getExtDataHash, FIELD_SIZE } = require('./uti
 const Utxo = require('./utxo')
 
 const { prove } = require('./prover')
-const MERKLE_TREE_HEIGHT = 23
+const MERKLE_TREE_HEIGHT = 5
 
 async function buildMerkleTree({ tornadoPool }) {
   const filter = tornadoPool.filters.NewCommitment()
@@ -43,7 +43,7 @@ async function getProof({ inputs, outputs, tree, extAmount, fee, recipient, rela
     relayer: toFixedHex(relayer, 20),
     fee: toFixedHex(fee),
     encryptedOutput1: outputs[0].encrypt(),
-    encryptedOutput2: outputs[1].encrypt(),
+    // encryptedOutput2: outputs[1].encrypt(),
     membershipProofURI,
   }
 
@@ -94,13 +94,13 @@ async function prepareTransaction({
   relayer = 0,
   membershipProofURI = '',
 }) {
-  if (inputs.length > 16 || outputs.length > 2) {
+  if (inputs.length > 1 || outputs.length > 1) {
     throw new Error('Incorrect inputs/outputs count')
   }
-  while (inputs.length !== 2 && inputs.length < 16) {
+  while (inputs.length !== 1) {
     inputs.push(new Utxo())
   }
-  while (outputs.length < 2) {
+  while (outputs.length < 1) {
     outputs.push(new Utxo())
   }
 

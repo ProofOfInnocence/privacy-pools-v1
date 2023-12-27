@@ -25,15 +25,17 @@ contract PrivacyPool is MerkleTreeWithHistory, ReentrancyGuard {
     address relayer;
     uint256 fee;
     bytes encryptedOutput1;
-    bytes encryptedOutput2;
+    // bytes encryptedOutput2;
     string membershipProofURI;
   }
 
   struct Proof {
     bytes proof;
     bytes32 root;
-    bytes32[2] inputNullifiers;
-    bytes32[2] outputCommitments;
+    // bytes32[2] inputNullifiers;
+    // bytes32[2] outputCommitments;
+    bytes32[1] inputNullifiers;
+    bytes32[1] outputCommitments;
     uint256 publicAmount;
     bytes32 extDataHash;
   }
@@ -42,9 +44,9 @@ contract PrivacyPool is MerkleTreeWithHistory, ReentrancyGuard {
   event NewNullifier(bytes32 nullifier);
   event NewTxRecord(
     bytes32 inputNullifier1,
-    bytes32 inputNullifier2,
+    // bytes32 inputNullifier2,
     bytes32 outputCommitment1,
-    bytes32 outputCommitment2,
+    // bytes32 outputCommitment2,
     uint256 publicAmount,
     uint32 index
   );
@@ -94,7 +96,7 @@ contract PrivacyPool is MerkleTreeWithHistory, ReentrancyGuard {
   }
 
   function verifyProof(Proof memory _args) public view returns (bool) {
-    if (_args.inputNullifiers.length == 2) {
+    if (_args.inputNullifiers.length == 1) {
       return
         verifier2.verifyProof(
           _args.proof,
@@ -103,9 +105,9 @@ contract PrivacyPool is MerkleTreeWithHistory, ReentrancyGuard {
             _args.publicAmount,
             uint256(_args.extDataHash),
             uint256(_args.inputNullifiers[0]),
-            uint256(_args.inputNullifiers[1]),
-            uint256(_args.outputCommitments[0]),
-            uint256(_args.outputCommitments[1])
+            // uint256(_args.inputNullifiers[1]),
+            uint256(_args.outputCommitments[0])
+            // uint256(_args.outputCommitments[1])
           ]
         );
     } else {
@@ -136,18 +138,19 @@ contract PrivacyPool is MerkleTreeWithHistory, ReentrancyGuard {
     }
 
     lastBalance = token.balanceOf(address(this));
-    _insert(_args.outputCommitments[0], _args.outputCommitments[1]);
-    emit NewCommitment(_args.outputCommitments[0], nextIndex - 2, _extData.encryptedOutput1);
-    emit NewCommitment(_args.outputCommitments[1], nextIndex - 1, _extData.encryptedOutput2);
+    // _insert(_args.outputCommitments[0], _args.outputCommitments[1]);
+    _insert(_args.outputCommitments[0]); // TODO: Change here
+    emit NewCommitment(_args.outputCommitments[0], nextIndex - 1, _extData.encryptedOutput1);
+    // emit NewCommitment(_args.outputCommitments[1], nextIndex - 1, _extData.encryptedOutput2);
     emit NewNullifier(_args.inputNullifiers[0]);
-    emit NewNullifier(_args.inputNullifiers[1]);
+    // emit NewNullifier(_args.inputNullifiers[1]);
     emit NewTxRecord(
       _args.inputNullifiers[0],
-      _args.inputNullifiers[1],
+      // _args.inputNullifiers[1],
       _args.outputCommitments[0],
-      _args.outputCommitments[1],
+      // _args.outputCommitments[1],
       _args.publicAmount,
-      nextIndex - 2
+      nextIndex - 1
     );
   }
 }

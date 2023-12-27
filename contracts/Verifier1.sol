@@ -1,0 +1,1 @@
+../artifacts/circuits/Verifier1.sol

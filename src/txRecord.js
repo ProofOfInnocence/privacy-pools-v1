@@ -11,30 +11,30 @@ class TxRecord {
 
   hash() {
     return poseidonHash([
-      poseidonHash([
-        poseidonHash([
+      // poseidonHash([
+        // poseidonHash([
           this.inputs[0].getNullifier(),
-          this.inputs[1].getNullifier(),
+          // this.inputs[1].getNullifier(),
           this.outputs[0].getCommitment(),
-          this.outputs[1].getCommitment(),
-        ]),
+          // this.outputs[1].getCommitment(),
+        // ]),
         this.publicAmount,
-      ]),
+      // ]),
       this.index,
     ])
   }
 
   static hashFromEvent(event) {
     return poseidonHash([
-      poseidonHash([
-        poseidonHash([
+      // poseidonHash([
+      //   poseidonHash([
           event.args.inputNullifier1,
-          event.args.inputNullifier2,
+          // event.args.inputNullifier2,
           event.args.outputCommitment1,
-          event.args.outputCommitment2,
-        ]),
+          // event.args.outputCommitment2,
+        // ]),
         event.args.publicAmount,
-      ]),
+      // ]),
       event.args.index,
     ])
   }
@@ -60,7 +60,8 @@ class TxRecord {
     const step_in = poseidonHash([
       txRecordsMerkleTree.root(),
       allowedTxRecordsMerkleTree.root(),
-      poseidonHash2(accInnocentCommitments[0], accInnocentCommitments[1]),
+      accInnocentCommitments[0],
+      // poseidonHash2(accInnocentCommitments[0], accInnocentCommitments[1]),
     ])
 
     let allowedTxRecordsPathIndex = null

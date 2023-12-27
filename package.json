@@ -7,6 +7,7 @@
     "test": "test"
   },
   "scripts": {
+    "circuit1": "bash ./scripts/buildCircuit.sh 1",
     "circuit": "bash ./scripts/unzipCircuits.sh",
     "circuit_prod": "rm -rf ./artifacts/circuits && bash ./scripts/unzipCircuits.sh",
     "compile:hasher": "npx hardhat hasher",
@@ -14,6 +15,7 @@
     "build": "npm run circuit && npm run compile",
     "deploy": "npx hardhat run scripts/deployPrivacyPool.js --network goerli",
     "test": "npx hardhat test",
+    "test-full": "npx hardhat test test/full.test.js",
     "test-poi": "npx hardhat test test/poi.test.js",
     "eslint": "eslint --ext .js --ignore-path .gitignore .",
     "prettier:check": "prettier --check . --config .prettierrc",

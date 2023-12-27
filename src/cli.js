@@ -52,9 +52,9 @@ async function transact({ tornadoPool, keypair, amount, recipient = 0, allowlist
   }
   let outputs = [
     new Utxo({ amount: outputAmount, keypair }),
-    new Utxo({ amount: BigNumber.from(0), keypair }),
+    // new Utxo({ amount: BigNumber.from(0), keypair }),
   ]
-  while (inputs.length < 2) {
+  while (inputs.length < 1) {
     const newBlinding = BigNumber.from(
       '0x' +
         ethers.utils
