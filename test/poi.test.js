@@ -35,7 +35,7 @@ describe('ProofOfInnocence', function () {
 
     /** @type {TornadoPool} */
     const tornadoPool = await deploy(
-      'PrivacyPool',
+      'ERC20PrivacyPool',
       verifier2.address,
       MERKLE_TREE_HEIGHT,
       hasher.address,
