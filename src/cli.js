@@ -34,7 +34,7 @@ async function balance({ tornadoPool, keypair }) {
   return utxos.reduce((sum, x) => sum.add(x.amount), BigNumber.from(0))
 }
 
-async function transact({ tornadoPool, keypair, amount, recipient = 0, allowlist = null }) {
+async function transact({ tornadoPool, keypair, amount, msgValue = 0, recipient = 0, allowlist = null }) {
   let inputs = await getUtxos({ tornadoPool, keypair })
   if (inputs.length > 2) {
     throw new Error('Too many utxos, contact support')
@@ -84,11 +84,11 @@ async function transact({ tornadoPool, keypair, amount, recipient = 0, allowlist
       throw new Error('Proof is not valid')
     }
   }
-  return await transaction({ tornadoPool, inputs, outputs, recipient, membershipProofURI: '' })
+  return await transaction({ tornadoPool, inputs, outputs, recipient, membershipProofURI: '', msgValue })
 }
 
-async function deposit({ tornadoPool, keypair, amount }) {
-  return await transact({ tornadoPool, keypair, amount })
+async function deposit({ tornadoPool, keypair, amount, msgValue = 0}) {
+  return await transact({ tornadoPool, keypair, amount, msgValue })
 }
 
 async function withdraw({ tornadoPool, keypair, amount, recipient, allowlist = null }) {

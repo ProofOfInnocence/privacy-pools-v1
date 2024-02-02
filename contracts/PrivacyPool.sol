@@ -7,14 +7,12 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { IVerifier } from "./interfaces/IVerifier.sol";
 import "./MerkleTreeWithHistory.sol";
 
-contract PrivacyPool is MerkleTreeWithHistory, ReentrancyGuard {
+abstract contract PrivacyPool is MerkleTreeWithHistory, ReentrancyGuard {
   int256 public constant MAX_EXT_AMOUNT = 2**248;
   uint256 public constant MAX_FEE = 2**248;
 
   IVerifier public immutable verifier2;
-  IERC20 public immutable token;
 
-  uint256 public lastBalance;
   uint256 public __gap; // storage padding to prevent storage collision
   uint256 public maximumDepositAmount;
   mapping(bytes32 => bool) public nullifierHashes;
@@ -55,31 +53,25 @@ contract PrivacyPool is MerkleTreeWithHistory, ReentrancyGuard {
     @param _verifier2 the address of SNARK verifier for 2 inputs
     @param _levels hight of the commitments merkle tree
     @param _hasher hasher address for the merkle tree
-    @param _token token address for the pool
   */
   constructor(
     IVerifier _verifier2,
     uint32 _levels,
     address _hasher,
-    IERC20 _token,
     uint256 _maximumDepositAmount
   ) MerkleTreeWithHistory(_levels, _hasher) {
     verifier2 = _verifier2;
-    token = _token;
     maximumDepositAmount = _maximumDepositAmount;
   }
 
   /** @dev Main function that allows deposits, transfers and withdrawal.
    */
-  function transact(Proof memory _args, ExtData memory _extData) public {
-    if (_extData.extAmount > 0) {
-      // for deposits from L2
-      token.transferFrom(msg.sender, address(this), uint256(_extData.extAmount));
-      require(uint256(_extData.extAmount) <= maximumDepositAmount, "amount is larger than maximumDepositAmount");
-    }
-
+  function transact(Proof memory _args, ExtData memory _extData) public payable {
+    _processDeposit(_extData);
     _transact(_args, _extData);
   }
+
+  function _processDeposit(ExtData memory) internal virtual;
 
   function calculatePublicAmount(int256 _extAmount, uint256 _fee) public pure returns (uint256) {
     require(_fee < MAX_FEE, "Invalid fee");
@@ -126,17 +118,8 @@ contract PrivacyPool is MerkleTreeWithHistory, ReentrancyGuard {
       nullifierHashes[_args.inputNullifiers[i]] = true;
     }
 
-    if (_extData.extAmount < 0) {
-      require(_extData.recipient != address(0), "Can't withdraw to zero address");
-      token.transfer(_extData.recipient, uint256(-_extData.extAmount));
-      emit NewWithdrawal(_extData.recipient, uint256(-_extData.extAmount), _extData.membershipProofURI);
-    }
-    if (_extData.fee > 0) {
-      token.transfer(_extData.relayer, _extData.fee);
-    }
-
-    lastBalance = token.balanceOf(address(this));
     _insert(_args.outputCommitments[0], _args.outputCommitments[1]);
+    _processWithdraw(_extData);
     emit NewCommitment(_args.outputCommitments[0], nextIndex - 2, _extData.encryptedOutput1);
     emit NewCommitment(_args.outputCommitments[1], nextIndex - 1, _extData.encryptedOutput2);
     emit NewNullifier(_args.inputNullifiers[0]);
@@ -150,4 +133,6 @@ contract PrivacyPool is MerkleTreeWithHistory, ReentrancyGuard {
       nextIndex - 2
     );
   }
+  
+  function _processWithdraw(ExtData memory) internal virtual;
 }

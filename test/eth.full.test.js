@@ -14,7 +14,7 @@ const { getUtxos, deposit, withdraw, balance } = require('../src/cli')
 const MERKLE_TREE_HEIGHT = 23
 const MAXIMUM_DEPOSIT_AMOUNT = utils.parseEther(process.env.MAXIMUM_DEPOSIT_AMOUNT || '1')
 
-describe('Privacy Pool', function () {
+describe('ETH Privacy Pool', function () {
   this.timeout(20000)
 
   async function deploy(contractName, ...args) {
@@ -28,21 +28,16 @@ describe('Privacy Pool', function () {
     const [sender] = await ethers.getSigners()
     const verifier2 = await deploy('Verifier2')
     const hasher = await deploy('Hasher')
-    const token = await deploy('WETH', 'Wrapped ETH', 'WETH')
-    await token.deposit({ value: utils.parseEther('3') })
 
     const tornadoPool = await deploy(
-      'PrivacyPool',
+      'ETHPrivacyPool',
       verifier2.address,
       MERKLE_TREE_HEIGHT,
       hasher.address,
-      token.address,
       MAXIMUM_DEPOSIT_AMOUNT,
     )
 
-    await token.approve(tornadoPool.address, utils.parseEther('10000'))
-
-    return { tornadoPool, token, sender }
+    return { tornadoPool, sender }
   }
 
   it('encrypt -> decrypt should work', () => {
@@ -64,12 +59,12 @@ describe('Privacy Pool', function () {
   })
 
   it('should deposit, transact and withdraw', async function () {
-    const { tornadoPool, token } = await loadFixture(fixture)
+    const { tornadoPool } = await loadFixture(fixture)
 
     // Alice deposits into tornado pool
     const aliceDepositAmount = utils.parseEther('0.1')
     const aliceDepositUtxo = new Utxo({ amount: aliceDepositAmount })
-    await transaction({ tornadoPool, outputs: [aliceDepositUtxo] })
+    await transaction({ tornadoPool, outputs: [aliceDepositUtxo], msgValue: aliceDepositAmount })
 
     // Bob gives Alice address to send some eth inside the shielded pool
     const bobKeypair = new Keypair() // contains private and public keys
@@ -108,7 +103,7 @@ describe('Privacy Pool', function () {
       recipient: bobEthAddress,
     })
 
-    const bobBalance = await token.balanceOf(bobEthAddress)
+    const bobBalance = await ethers.provider.getBalance(bobEthAddress)
     expect(bobBalance).to.be.equal(bobWithdrawAmount)
   })
 
@@ -125,6 +120,7 @@ describe('Privacy Pool', function () {
     })
     const receipt = await tornadoPool.transact(args, extData, {
       gasLimit: 2e6,
+      value: aliceDepositAmount,
     })
     await receipt.wait()
 
@@ -175,6 +171,25 @@ describe('Privacy Pool', function () {
     // and the tx with NewNullifier event is where alice spent the UTXO
   })
 
+  it('should revert if msg.value is not equal to deposit amount', async function () {
+    const { tornadoPool } = await loadFixture(fixture)
+    const aliceDepositAmount = utils.parseEther('0.01')
+    const aliceDepositUtxo = new Utxo({ amount: aliceDepositAmount })
+    
+    const { args, extData } = await prepareTransaction({
+      tornadoPool,
+      outputs: [aliceDepositUtxo],
+    })
+
+    await expect(
+      tornadoPool.transact(args, extData, {
+        gasLimit: 2e6,
+        value: aliceDepositAmount.sub(1),
+      }),
+    ).to.be.revertedWith('Invalid amount')
+  })
+    
+
   it('should deposit with single keypair', async function () {
     const { tornadoPool } = await loadFixture(fixture)
     const aliceDepositAmount = utils.parseEther('0.07')
@@ -186,6 +201,7 @@ describe('Privacy Pool', function () {
       tornadoPool,
       keypair: aliceKeypair,
       amount: aliceDepositAmount,
+      msgValue: aliceDepositAmount,
     })
 
     const filter = tornadoPool.filters.NewCommitment()
@@ -213,6 +229,7 @@ describe('Privacy Pool', function () {
       tornadoPool,
       keypair: aliceKeypair,
       amount: aliceDepositAmount1,
+      msgValue: aliceDepositAmount1,
     })
     expect(await balance({ provider: ethers.provider, tornadoPool, keypair: aliceKeypair })).to.be.equal(
       aliceDepositAmount1,
@@ -222,6 +239,7 @@ describe('Privacy Pool', function () {
       tornadoPool,
       keypair: aliceKeypair,
       amount: aliceDepositAmount2,
+      msgValue: aliceDepositAmount2,
     })
     expect(await balance({ provider: ethers.provider, tornadoPool, keypair: aliceKeypair })).to.be.equal(
       aliceDepositAmount1.add(aliceDepositAmount2),

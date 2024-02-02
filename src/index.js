@@ -93,6 +93,7 @@ async function prepareTransaction({
   recipient = 0,
   relayer = 0,
   membershipProofURI = '',
+  msgValue = 0,
 }) {
   if (inputs.length > 16 || outputs.length > 2) {
     throw new Error('Incorrect inputs/outputs count')
@@ -122,17 +123,19 @@ async function prepareTransaction({
   return {
     args,
     extData,
+    msgValue,
   }
 }
 
 async function transaction({ tornadoPool, ...rest }) {
-  const { args, extData } = await prepareTransaction({
+  const { args, extData, msgValue } = await prepareTransaction({
     tornadoPool,
     ...rest,
   })
 
   const receipt = await tornadoPool.transact(args, extData, {
     gasLimit: 2e6,
+    value: msgValue,
   })
   return await receipt.wait()
 }

@@ -46,6 +46,7 @@
     "omnibridge": "git+https://github.com/peppersec/omnibridge.git#30081f7a735eb03c9d6821a9617cc28efe71a682",
     "prompt-sync": "^4.2.0",
     "snarkjs": "git+https://github.com/tornadocash/snarkjs.git#f37f146948f3b28086493e71512006b030588fc2",
+    "solmate": "^6.2.0",
     "tmp-promise": "^3.0.2",
     "typechain": "^5.1.2"
   },
