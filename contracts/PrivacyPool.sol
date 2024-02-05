@@ -46,7 +46,7 @@ abstract contract PrivacyPool is MerkleTreeWithHistory, ReentrancyGuard {
     uint256 publicAmount,
     uint32 index
   );
-  event NewWithdrawal(address recipient, uint256 amount, string membershipProofURI);
+  event NewWithdrawal(address recipient, uint256 amount, string membershipProofURI, bytes32[2] inputNullifiers);
 
   /**
     @dev The constructor
@@ -110,7 +110,7 @@ abstract contract PrivacyPool is MerkleTreeWithHistory, ReentrancyGuard {
     for (uint256 i = 0; i < _args.inputNullifiers.length; i++) {
       require(!isSpent(_args.inputNullifiers[i]), "Input is already spent");
     }
-    // require(uint256(_args.extDataHash) == uint256(keccak256(abi.encode(_extData))) % FIELD_SIZE, "Incorrect external data hash");
+    require(uint256(_args.extDataHash) == uint256(keccak256(abi.encode(_extData))) % FIELD_SIZE, "Incorrect external data hash");
     require(_args.publicAmount == calculatePublicAmount(_extData.extAmount, _extData.fee), "Invalid public amount");
     require(verifyProof(_args), "Invalid transaction proof");
 
@@ -119,7 +119,7 @@ abstract contract PrivacyPool is MerkleTreeWithHistory, ReentrancyGuard {
     }
 
     _insert(_args.outputCommitments[0], _args.outputCommitments[1]);
-    _processWithdraw(_extData);
+    _processWithdraw(_args, _extData);
     emit NewCommitment(_args.outputCommitments[0], nextIndex - 2, _extData.encryptedOutput1);
     emit NewCommitment(_args.outputCommitments[1], nextIndex - 1, _extData.encryptedOutput2);
     emit NewNullifier(_args.inputNullifiers[0]);
@@ -134,5 +134,5 @@ abstract contract PrivacyPool is MerkleTreeWithHistory, ReentrancyGuard {
     );
   }
 
-  function _processWithdraw(ExtData memory) internal virtual;
+  function _processWithdraw(Proof memory, ExtData memory) internal virtual;
 }

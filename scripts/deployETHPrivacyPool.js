@@ -20,7 +20,6 @@ async function main() {
     return
   }
 
-
   const Verifier2 = await ethers.getContractFactory('Verifier2')
   const verifier2 = await Verifier2.deploy()
   await verifier2.deployed()
