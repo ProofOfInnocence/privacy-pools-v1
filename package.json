@@ -12,7 +12,7 @@
     "compile:hasher": "npx hardhat hasher",
     "compile": "npx hardhat compile && yarn compile:hasher",
     "build": "npm run circuit && npm run compile",
-    "deploy": "npx hardhat run scripts/deployPrivacyPool.js --network goerli",
+    "deploy": "npx hardhat run scripts/deployETHPrivacyPool.js --network goerli",
     "test": "npx hardhat test",
     "test-poi": "npx hardhat test test/poi.test.js",
     "eslint": "eslint --ext .js --ignore-path .gitignore --ignore-pattern 'membership-proof/' . ",
