@@ -243,7 +243,7 @@ describe('ERC20 Privacy Pool', function () {
     const aliceDepositAmount = utils.parseEther('0.01')
     const aliceDepositUtxo = new Utxo({ amount: aliceDepositAmount })
     await expect(
-      transaction({ tornadoPool, outputs: [aliceDepositUtxo] , msgValue: utils.parseEther('0.01')})
+      transaction({ tornadoPool, outputs: [aliceDepositUtxo], msgValue: utils.parseEther('0.01') }),
     ).to.be.revertedWith('ETH is not accepted for ERC20 pool')
   })
 })

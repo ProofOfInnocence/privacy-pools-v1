@@ -1,4 +1,4 @@
-to compile circom to r1cs, use 
+to compile circom to r1cs, use
 
 ```sh
 circom circuits/proofOfInnocence.circom --r1cs --wasm -o wasm-nova/output

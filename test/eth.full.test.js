@@ -175,7 +175,7 @@ describe('ETH Privacy Pool', function () {
     const { tornadoPool } = await loadFixture(fixture)
     const aliceDepositAmount = utils.parseEther('0.01')
     const aliceDepositUtxo = new Utxo({ amount: aliceDepositAmount })
-    
+
     const { args, extData } = await prepareTransaction({
       tornadoPool,
       outputs: [aliceDepositUtxo],
@@ -188,7 +188,6 @@ describe('ETH Privacy Pool', function () {
       }),
     ).to.be.revertedWith('Invalid amount')
   })
-    
 
   it('should deposit with single keypair', async function () {
     const { tornadoPool } = await loadFixture(fixture)

@@ -133,6 +133,6 @@ abstract contract PrivacyPool is MerkleTreeWithHistory, ReentrancyGuard {
       nextIndex - 2
     );
   }
-  
+
   function _processWithdraw(ExtData memory) internal virtual;
 }

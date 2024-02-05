@@ -87,7 +87,7 @@ async function transact({ tornadoPool, keypair, amount, msgValue = 0, recipient 
   return await transaction({ tornadoPool, inputs, outputs, recipient, membershipProofURI: '', msgValue })
 }
 
-async function deposit({ tornadoPool, keypair, amount, msgValue = 0}) {
+async function deposit({ tornadoPool, keypair, amount, msgValue = 0 }) {
   return await transact({ tornadoPool, keypair, amount, msgValue })
 }
 

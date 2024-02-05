@@ -42,5 +42,4 @@ contract ERC20PrivacyPool is PrivacyPool {
       token.transfer(_extData.relayer, _extData.fee);
     }
   }
-  
 }

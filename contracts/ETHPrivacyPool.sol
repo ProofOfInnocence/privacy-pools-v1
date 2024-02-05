@@ -6,7 +6,6 @@ import "./PrivacyPool.sol";
 import "solmate/src/utils/SafeTransferLib.sol";
 
 contract ETHPrivacyPool is PrivacyPool {
-  
   /**
     @dev The constructor
     @param _verifier2 the address of SNARK verifier for 2 inputs
