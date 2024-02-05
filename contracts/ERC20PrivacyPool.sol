@@ -32,11 +32,11 @@ contract ERC20PrivacyPool is PrivacyPool {
     }
   }
 
-  function _processWithdraw(ExtData memory _extData) internal override {
+  function _processWithdraw(Proof memory _args, ExtData memory _extData) internal override {
     if (_extData.extAmount < 0) {
       require(_extData.recipient != address(0), "Can't withdraw to zero address");
       token.transfer(_extData.recipient, uint256(-_extData.extAmount));
-      emit NewWithdrawal(_extData.recipient, uint256(-_extData.extAmount), _extData.membershipProofURI);
+      emit NewWithdrawal(_extData.recipient, uint256(-_extData.extAmount), _extData.membershipProofURI, _args.inputNullifiers);
     }
     if (_extData.fee > 0) {
       token.transfer(_extData.relayer, _extData.fee);

@@ -27,7 +27,7 @@ function getExtDataHash({
 
   const encodedData = abi.encode(
     [
-      'tuple(address recipient,int256 extAmount,address relayer,uint256 fee,bytes encryptedOutput1,string membershipProofURI)',
+      'tuple(address recipient,int256 extAmount,address relayer,uint256 fee,bytes encryptedOutput1,bytes encryptedOutput2,string membershipProofURI)',
     ],
     [
       {

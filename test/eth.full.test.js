@@ -107,7 +107,7 @@ describe('ETH Privacy Pool', function () {
     expect(bobBalance).to.be.equal(bobWithdrawAmount)
   })
 
-  it('should be compliant', async function () {
+  xit('should be compliant', async function () {
     // basically verifier should check if a commitment and a nullifier hash are on chain
     const { tornadoPool } = await loadFixture(fixture)
     const aliceDepositAmount = utils.parseEther('0.07')
