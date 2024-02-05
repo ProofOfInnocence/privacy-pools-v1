@@ -11,30 +11,18 @@ class TxRecord {
 
   hash() {
     return poseidonHash([
-      poseidonHash([
-        poseidonHash([
-          this.inputs[0].getNullifier(),
-          this.inputs[1].getNullifier(),
-          this.outputs[0].getCommitment(),
-          this.outputs[1].getCommitment(),
-        ]),
-        this.publicAmount,
-      ]),
+      poseidonHash([this.inputs[0].getNullifier(), this.inputs[1].getNullifier()]),
+      poseidonHash([this.outputs[0].getCommitment(), this.outputs[1].getCommitment()]),
+      this.publicAmount,
       this.index,
     ])
   }
 
   static hashFromEvent(event) {
     return poseidonHash([
-      poseidonHash([
-        poseidonHash([
-          event.args.inputNullifier1,
-          event.args.inputNullifier2,
-          event.args.outputCommitment1,
-          event.args.outputCommitment2,
-        ]),
-        event.args.publicAmount,
-      ]),
+      poseidonHash([event.args.inputNullifier1, event.args.inputNullifier2]),
+      poseidonHash([event.args.outputCommitment1, event.args.outputCommitment2]),
+      event.args.publicAmount,
       event.args.index,
     ])
   }
@@ -62,11 +50,13 @@ class TxRecord {
       allowedTxRecordsMerkleTree.root(),
       poseidonHash2(accInnocentCommitments[0], accInnocentCommitments[1]),
     ])
+    let isDeposit = false
 
     let allowedTxRecordsPathIndex = null
     let allowedTxRecordsPathElements = null
     if (BigNumber.from(this.publicAmount).lt(BigNumber.from(2).pow(240))) {
-      
+      isDeposit = true
+
       allowedTxRecordsPathIndex = allowedTxRecordsMerkleTree.indexOf(txRecord)
       if (allowedTxRecordsPathIndex == -1) {
         throw new Error('txRecord not found in allowedTxRecordsMerkleTree')
@@ -77,22 +67,28 @@ class TxRecord {
       allowedTxRecordsPathElements = new Array(allowedTxRecordsMerkleTree.levels).fill(0)
     }
 
-    let inPrivateKey = []
+    // let inPrivateKey = []
     let inputNullifier = []
     let inAmount = []
     let inBlinding = []
+    let inPublicKey = []
     let inPathIndices = []
     let outputCommitment = []
     let outAmount = []
     let outPubkey = []
+    let inSignature = []
+    // let inCommitmentHashes = []
     let outBlinding = []
 
     for (let i = 0; i < this.inputs.length; i++) {
-      inPrivateKey.push(this.inputs[i].keypair.privkey)
+      // inPrivateKey.push(this.inputs[i].keypair.privkey)
       inputNullifier.push(this.inputs[i].getNullifier())
       inAmount.push(this.inputs[i].amount)
       inBlinding.push(this.inputs[i].blinding)
+      inPublicKey.push(this.inputs[i].keypair.pubkey)
       inPathIndices.push(this.inputs[i].index)
+      inSignature.push(this.inputs[i].getSignature())
+      // inCommitmentHashes.push(this.inputs[i].getCommitment())
     }
     let outputInnocentCommitments = []
     for (let j = 0; j < this.outputs.length; j++) {
@@ -107,10 +103,12 @@ class TxRecord {
     }
     return {
       stepInputs: {
-        txRecordsPathElements: txRecordsPathElements,
-        txRecordsPathIndex: txRecordsPathIndex,
-        allowedTxRecordsPathElements: allowedTxRecordsPathElements,
-        allowedTxRecordsPathIndex: allowedTxRecordsPathIndex,
+        txRecordPathElements: isDeposit ? allowedTxRecordsPathElements : txRecordsPathElements,
+        txRecordPathIndex: isDeposit ? allowedTxRecordsPathIndex : txRecordsPathIndex,
+        // txRecordsPathElements: txRecordsPathElements,
+        // txRecordsPathIndex: txRecordsPathIndex,
+        // allowedTxRecordsPathElements: allowedTxRecordsPathElements,
+        // allowedTxRecordsPathIndex: allowedTxRecordsPathIndex,
         accInnocentCommitments,
         isLastStep: isLastStep,
         txRecordsMerkleRoot: txRecordsMerkleTree.root(),
@@ -119,14 +117,16 @@ class TxRecord {
         publicAmount: this.publicAmount,
         outputsStartIndex: this.index,
         inputNullifier: inputNullifier,
+        inSignature: inSignature,
+        inPublicKey: inPublicKey,
         inAmount: inAmount,
-        inPrivateKey: inPrivateKey,
+        // inPrivateKey: inPrivateKey,
         inBlinding: inBlinding,
         inPathIndices: inPathIndices,
         outputCommitment: outputCommitment,
-        outAmount: outAmount,
-        outPubkey: outPubkey,
-        outBlinding: outBlinding,
+        // outAmount: outAmount,
+        // outPubkey: outPubkey,
+        // outBlinding: outBlinding,
       },
       outputInnocentCommitments,
     }

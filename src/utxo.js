@@ -53,6 +53,28 @@ class Utxo {
   }
 
   /**
+   * Returns Signature for this UTXO
+   *
+   * @returns {BigNumber}
+   */
+  getSignature() {
+    if (!this._nullifier) {
+      if (
+        this.amount > 0 &&
+        (this.index === undefined ||
+          this.index === null ||
+          this.keypair.privkey === undefined ||
+          this.keypair.privkey === null)
+      ) {
+        throw new Error('Can not compute nullifier without utxo index or private key')
+      }
+      const signature = this.keypair.privkey ? this.keypair.sign(this.getCommitment(), this.index || 0) : 0
+      this._nullifier = poseidonHash([this.getCommitment(), this.index || 0, signature])
+    }
+    return this.keypair.privkey ? this.keypair.sign(this.getCommitment(), this.index || 0) : 0
+  }
+
+  /**
    * Encrypt UTXO data using the current keypair
    *
    * @returns {string} `0x`-prefixed hex string with data
