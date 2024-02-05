@@ -29,7 +29,7 @@ describe('MerkleTreeWithHistory', function () {
       MERKLE_TREE_HEIGHT,
       hasher.address,
     )
-    await merkleTreeWithHistory.initialize()
+    // await merkleTreeWithHistory.initialize()
     return { hasher, merkleTreeWithHistory }
   }
 
