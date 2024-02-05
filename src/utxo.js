@@ -53,7 +53,7 @@ class Utxo {
   }
 
   /**
-   * Returns nullifier for this UTXO
+   * Returns Signature for this UTXO
    *
    * @returns {BigNumber}
    */
