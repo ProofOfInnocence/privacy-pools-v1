@@ -1,10 +1,10 @@
 to compile circom to r1cs, use
 
 ```sh
-circom circuits/proofOfInnocence.circom --r1cs --wasm -o wasm-nova/output
+circom circuits/proofOfInnocence.circom --r1cs --wasm -o wasm/output
 ```
 
-to create pp cbor from r1cs, in wasm-nova
+to create pp cbor from r1cs, in `wasm`
 
 ```sh
 cargo run --release
