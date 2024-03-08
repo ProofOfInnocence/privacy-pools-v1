@@ -31,3 +31,7 @@ js-sys = "0.3"
 
 [lib]
 crate-type = ["cdylib", "rlib"]
+
+[dev-dependencies]
+wasm-bindgen-test = "0.3.37"
+web-sys = { version = "0.3", features = ["Performance"] }
