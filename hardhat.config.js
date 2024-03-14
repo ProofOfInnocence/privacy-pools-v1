@@ -101,6 +101,14 @@ const config = {
             mnemonic: 'test test test test test test test test test test test junk',
           },
     },
+    sepolia: {
+      url: process.env.SEPOLIA_RPC || 'https://ethereum-sepolia-rpc.publicnode.com',
+      accounts: process.env.PRIVATE_KEY
+        ? [process.env.PRIVATE_KEY]
+        : {
+            mnemonic: 'test test test test test test test test test test test junk',
+          },
+    },
   },
   etherscan: {
     apiKey: process.env.ETHERSCAN_KEY,

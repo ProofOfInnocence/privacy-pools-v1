@@ -15,7 +15,7 @@ async function main() {
   const chainId = network.chainId
 
   console.log('deploying to chainId:', network.name)
-  if (chainId !== 5) {
+  if (chainId !== 11155111) {
     console.log('Please switch to goerli network')
     return
   }
